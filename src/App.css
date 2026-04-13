@@ -1,0 +1,21 @@
+.container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  align-items: center;
+  background-size: cover;
+}
+
+.map {
+  z-index: 0;
+  position: absolute;
+}
+.lateralMenu{
+  z-index: 1;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Quicksand", sans-serif;
+}

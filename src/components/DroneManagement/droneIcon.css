@@ -1,0 +1,157 @@
+.droneIcon {
+  position: relative;
+  display: inline-block;
+  width: auto;
+}
+
+.droneInfoTab {
+  position: absolute;
+  bottom: 120%;
+  left: -165px;
+  width: 170px;
+  background: white;
+  box-shadow: 1px 12px 33px rgba(0, 0, 0, 0.5);
+  border-radius: 10px 10px 0px 10px;
+  font-size: 11px;
+  user-select: none;
+  z-index: 10;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  max-height: 1000px;
+  transform-origin: bottom center;
+}
+
+.droneInfoTab.open {
+  max-height: 500px;
+}
+.droneInfoTab::after {
+  content: '...';
+  position: absolute;
+  bottom: 2px;
+  right: 5px;
+  font-size: 14px;
+  color: #777;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  background: white;
+  padding: 0 2px;
+}
+
+.droneInfoTab::before {
+  content: '';
+  position: absolute;
+  bottom: -15px;
+  right: 0px;
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 15px solid white;
+}
+
+.droneSvg {
+  width: 40px;
+  height: 40px;
+  display: block;
+  position: relative;
+  z-index: 20;
+}
+
+.droneName {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #222;
+}
+
+.orientationLine {
+  position: absolute;
+  top: -35px;
+  left: 50%;
+  transform: translateX(-50%) rotate(90deg);
+  width: 120px;
+  height: 2px;
+  background-color: red;
+  transform-origin: center;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.droneIcon .waterIcon {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  font-size: 20px;
+  color: #0091f9;
+  cursor: default;
+  top: 35px;
+  left: -15px;
+}
+
+.labelCell {
+  text-align: left;
+  font-weight: bold;
+  padding-right: 6px;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.cellTruncate { 
+  width: 100%;  
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: left;
+}
+
+.droneInfoTab table {
+  width: 130px;
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+
+.droneInfoTab::after {
+  content: '...';
+  position: absolute;
+  bottom: 2px;
+  right: 5px;
+  font-size: 14px;
+  color: #777;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  background: white;
+  padding: 0 2px;
+}
+
+.droneInfoTab:hover::after {
+  opacity: 0; 
+}
+
+.droneInfoTab .scrollFade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 15px;
+  background: linear-gradient(to bottom, transparent, white 80%);
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
+.droneInfoTab:hover .scrollFade {
+  opacity: 0;
+}
+
+.droneInfoTab tbody {
+  display: block;
+  max-height: 56px;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.droneInfoTab:hover tbody {
+  max-height: none;
+}

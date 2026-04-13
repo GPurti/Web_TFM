@@ -1,0 +1,83 @@
+.mapStyleMenu {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+}
+
+.menuWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.menuToggle {
+  background: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  border: none;
+}
+
+.menuDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 200px;
+  z-index: 999;
+}
+
+.menuSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sectionTitle {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.menuItem {
+  background: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 10px;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.menuItem:hover {
+  background: #eaeaea;
+}
+
+.menuItem.selected {
+  background-color: #e0f7e9;
+  border-color: #8bc34a;
+  font-weight: bold;
+}
+
+.check {
+  color: #4caf50;
+  font-weight: bold;
+}
+.lateralButtons{
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px; 
+}

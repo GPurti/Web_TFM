@@ -1,0 +1,17 @@
+body, html {
+  margin: 0;
+  overflow: hidden;
+}
+body {
+  background-color: white;
+  color: black;
+  font-family:Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.material-symbols-outlined {
+  color: #F2C849;
+}
+
+.material-symbols-outlined:hover {
+  color: #000;
+}

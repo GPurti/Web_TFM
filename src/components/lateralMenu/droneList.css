@@ -1,0 +1,60 @@
+.droneContainer {
+  width: 100%;
+}
+
+.droneHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.droneHeaderName {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.droneHeaderButtons {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.droneList {
+  list-style: none;
+  padding: 0;
+}
+
+.droneItem {
+  background: #fff9ce;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.5rem;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.droneItemContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+
+.droneActions {
+  display: flex;
+  gap: 0.5rem;
+  margin-left: auto;
+  cursor: pointer;
+}
