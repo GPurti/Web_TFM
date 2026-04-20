@@ -25,8 +25,11 @@ function App() {
   const [selectedControlDrone, setSelectedControlDrone] = useState(null);
   const [controlWaypoints, setControlWaypoints] = useState([]);
   const [addFireMode, setAddFireMode] = useState(false);
-  const [activeRoute, setActiveRoute] = useState(null);
-  const [selectedActionDrone, setSelectedActionDrone] = useState(null); // Drone seleccionado para el panel de acciones
+  const [selectedActionDrone, setSelectedActionDrone] = useState(null);
+  const [activeFences, setActiveFences] = useState({});
+  
+  // 👇 NUEVO: Estado para rutas activas (múltiples drones)
+  const [activeRoutes, setActiveRoutes] = useState({}); // { [droneUid]: { waypoints, startTime, type } }
 
   // 2. FUNCIONES QUE NO DEPENDEN DE OTRAS FUNCIONES
   const fetchDrones = async () => {
@@ -47,15 +50,15 @@ function App() {
     setMqttClient(client);
   }, []);
 
-  const handleDroneUpdate = useCallback((uid, lat, lng, alt, heading) => {
+  const handleDroneUpdate = useCallback((uid, lat, lng, alt, heading, rest) => {
     setRealTimeDrones(prev => ({
       ...prev,
-      [uid]: { lat, lng, alt, heading },
+      [uid]: { lat, lng, alt, heading, telemetry: { latitude: lat, longitude: lng, altitude_asl: alt, heading, ...rest } },
     }));
   }, []);
 
   const handleNewDroneDetected = useCallback((newDrone) => {
-    console.log('🚁 Nuevo drone detectado automáticamente:', newDrone);
+    //console.log('🚁 Nuevo drone detectado automáticamente:', newDrone);
     setDrones(prev => {
       if (prev.some(d => d.uid === newDrone.uid)) return prev;
       return [...prev, newDrone];
@@ -63,6 +66,19 @@ function App() {
     setVisibleDrones(prev => ({
       ...prev,
       [newDrone.id]: true
+    }));
+  }, []);
+
+  // 👇 AÑADE ESTA FUNCIÓN
+  const handleFenceActivated = useCallback((droneUid, vertices) => {
+    console.log('🚧 Fence activado para', droneUid, 'con', vertices.length, 'vértices');
+    setActiveFences(prev => ({
+      ...prev,
+      [droneUid]: {
+        vertices,
+        startTime: Date.now(),
+        type: 'fence'
+      }
     }));
   }, []);
 
@@ -116,12 +132,12 @@ function App() {
   }, [controlMode]);
 
   const handleControlModeSelect = useCallback((drone) => {
-    console.log('🎮 Entrando en modo control para:', drone?.uid);
+    //console.log('🎮 Entrando en modo control para:', drone?.uid);
     setControlMode(true);
     setSelectedControlDrone(drone);
     setControlWaypoints([]);
     setSelectedDrone(null);
-    setSelectedActionDrone(null); // Cerrar panel de acciones si estaba abierto
+    setSelectedActionDrone(null);
     setIsFloatingDronesVisible(false);
     if (addFireMode) {
       setAddFireMode(false);
@@ -129,10 +145,33 @@ function App() {
   }, [addFireMode]);
 
   const handleExitControlMode = useCallback(() => {
-    console.log('🎮 Saliendo del modo control');
+    //console.log('🎮 Saliendo del modo control');
     setControlMode(false);
     setSelectedControlDrone(null);
     setControlWaypoints([]);
+  }, []);
+
+  // 👇 NUEVO: Función para activar una ruta después de enviarla
+  const handleRouteActivated = useCallback((droneUid, waypoints) => {
+    //console.log('🛤️ Ruta activa para', droneUid, 'con', waypoints.length, 'waypoints');
+    setActiveRoutes(prev => ({
+      ...prev,
+      [droneUid]: {
+        waypoints,
+        startTime: Date.now(),
+        type: 'control_route'
+      }
+    }));
+  }, []);
+
+  // 👇 NUEVO: Función para limpiar una ruta activa
+  const handleClearRoute = useCallback((droneUid) => {
+    //console.log('🧹 Limpiando ruta activa para', droneUid);
+    setActiveRoutes(prev => {
+      const newRoutes = { ...prev };
+      delete newRoutes[droneUid];
+      return newRoutes;
+    });
   }, []);
 
   // 3. FUNCIONES PARA COMANDOS MQTT
@@ -145,7 +184,6 @@ function App() {
 
     const topic = `${droneUid}_action`;
     
-    // Construir el mensaje según el comando
     let message = {};
     
     switch (command) {
@@ -190,20 +228,19 @@ function App() {
 
     const payload = JSON.stringify(message);
     
-    console.log(`📡 Enviando comando ${command} a ${topic}:`, payload);
+    //console.log(`📡 Enviando comando ${command} a ${topic}:`, payload);
     
     mqttClient.publish(topic, payload, { qos: 1 }, (err) => {
       if (err) {
         console.error(`❌ Error enviando comando ${command}:`, err);
       } else {
-        console.log(`✅ Comando ${command} enviado a ${topic}`);
+        //console.log(`✅ Comando ${command} enviado a ${topic}`);
       }
     });
     
     return true;
   }, [mqttClient]);
 
-  // Funciones específicas para cada comando
   const handleArm = useCallback(() => {
     if (!selectedActionDrone) return;
     sendDroneCommand(selectedActionDrone.uid, 'ARM');
@@ -239,9 +276,8 @@ function App() {
     sendDroneCommand(selectedActionDrone.uid, 'EMERGENCY_STOP');
   }, [selectedActionDrone, sendDroneCommand]);
 
-  // Función que maneja el clic en el drone
   const handleDroneClick = useCallback((drone) => {
-    console.log('🖱️ Drone seleccionado:', drone?.uid);
+    //console.log('🖱️ Drone seleccionado:', drone?.uid);
     setSelectedActionDrone(drone);
   }, []);
 
@@ -307,6 +343,12 @@ function App() {
           onExitControlMode={handleExitControlMode}
           addFireMode={addFireMode}
           onDroneClick={handleDroneClick}
+          activeRoutes={activeRoutes}
+          activeFences={activeFences}  
+          onRouteActivated={handleRouteActivated}
+          onFenceActivated={handleFenceActivated}
+          onClearRoute={handleClearRoute}
+          onSendFence={() => {}}
         />
 
         {isFloatingDronesVisible && !controlMode && (
@@ -346,7 +388,7 @@ function App() {
         />
       )}
 
-      {/* Modal de edición de drone (se abre desde el panel) */}
+      {/* Modal de edición de drone */}
       {selectedDrone && (
         <EditDroneModal
           drone={selectedDrone}

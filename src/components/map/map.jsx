@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import supabase from "../../supabaseClient";
@@ -12,73 +13,73 @@ import DroneControlPanel from "../DroneControl/DroneControlPanel";
 import ControlWaypoints from "../DroneControl/ControlWaypoints";
 import RoutePreview from "../DroneControl/RoutePreview";
 
-function ActiveRouteLayer({ waypoints, droneLocation, map }) {
-    const layersRef = useRef({ polyline: null, decorator: null, markers: [] });
+// Componente para mostrar rutas activas (persistentes) - AZUL
+function ActiveRoutesLayer({ activeRoutes, dronesLocations, map }) {
+  const layersRef = useRef({});
 
-    useEffect(() => {
-      if (!map || !waypoints || waypoints.length === 0) return;
+  useEffect(() => {
+    if (!map) return;
 
-      // Limpiar capas anteriores
-      if (layersRef.current.polyline) {
-        map.removeLayer(layersRef.current.polyline);
-      }
-      if (layersRef.current.decorator) {
-        map.removeLayer(layersRef.current.decorator);
-      }
-      layersRef.current.markers.forEach(marker => {
-        map.removeLayer(marker);
-      });
-      layersRef.current.markers = [];
+    // Limpiar capas anteriores
+    Object.values(layersRef.current).forEach(layer => {
+      if (layer.polyline) map.removeLayer(layer.polyline);
+      if (layer.decorator) map.removeLayer(layer.decorator);
+      if (layer.markers) layer.markers.forEach(m => map.removeLayer(m));
+    });
+    layersRef.current = {};
 
-      // Construir todos los puntos (desde la ubicación actual del drone hasta los waypoints)
+    // Dibujar cada ruta activa
+    Object.entries(activeRoutes).forEach(([droneUid, route]) => {
+      const { waypoints } = route;
+      if (!waypoints || waypoints.length === 0) return;
+
+      // Obtener ubicación actual del drone (si está disponible)
+      const droneLocation = dronesLocations[droneUid];
+      
       const allPoints = [];
-      
-      // Añadir ubicación actual del drone si está disponible
-      if (droneLocation && droneLocation.lat && droneLocation.lng) {
-        allPoints.push([droneLocation.lat, droneLocation.lng]);
-      }
-      
-      // Añadir todos los waypoints
+      //if (droneLocation && droneLocation.lat && droneLocation.lng) {
+      //  allPoints.push([droneLocation.lat, droneLocation.lng]);
+      //}
       waypoints.forEach(wp => {
         allPoints.push([wp.lat, wp.lng]);
       });
 
       if (allPoints.length < 2) return;
 
-      // Crear la polyline con flechas
+      // 👈 COLOR AZUL para rutas de control (diferente a fuegos rojos)
       const polyline = L.polyline(allPoints, {
-        color: '#ff6b6b',
+        color: '#3399ff',
         weight: 4,
         opacity: 0.9,
         dashArray: '5, 10'
       }).addTo(map);
 
-      // Añadir flechas decorativas
       const decorator = L.polylineDecorator(polyline, {
         patterns: [{
           offset: 25,
           repeat: 100,
           symbol: L.Symbol.arrowHead({
-            pixelSize: 14,
+            pixelSize: 12,
             polygon: true,
             pathOptions: {
-              color: '#ff6b6b',
+              color: '#3399ff',
               weight: 2,
               fillOpacity: 0.9,
-              fillColor: '#ff6b6b'
+              fillColor: '#3399ff'
             },
           }),
         }],
       }).addTo(map);
 
-      // Añadir marcadores para cada waypoint (opcional)
+      // Marcadores azules para waypoints
+      const markers = [];
       waypoints.forEach((wp, index) => {
         const marker = L.marker([wp.lat, wp.lng], {
           icon: L.divIcon({
             html: `<div style="
-              background-color: #ff6b6b;
-              width: 24px;
-              height: 24px;
+              background-color: #3399ff;
+              width: 22px;
+              height: 22px;
               border-radius: 50%;
               border: 2px solid white;
               display: flex;
@@ -86,36 +87,129 @@ function ActiveRouteLayer({ waypoints, droneLocation, map }) {
               justify-content: center;
               font-weight: bold;
               color: white;
-              font-size: 12px;
+              font-size: 11px;
               box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             ">${index + 1}</div>`,
             className: '',
-            iconSize: [24, 24],
-            iconAnchor: [12, 12]
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
           })
         }).addTo(map);
-        
-        layersRef.current.markers.push(marker);
+        markers.push(marker);
       });
 
-      layersRef.current.polyline = polyline;
-      layersRef.current.decorator = decorator;
+      layersRef.current[droneUid] = { polyline, decorator, markers };
+    });
 
-      return () => {
-        if (layersRef.current.polyline) {
-          map.removeLayer(layersRef.current.polyline);
-        }
-        if (layersRef.current.decorator) {
-          map.removeLayer(layersRef.current.decorator);
-        }
-        layersRef.current.markers.forEach(marker => {
-          map.removeLayer(marker);
-        });
-      };
-    }, [waypoints, droneLocation, map]);
+    return () => {
+      Object.values(layersRef.current).forEach(layer => {
+        if (layer.polyline) map.removeLayer(layer.polyline);
+        if (layer.decorator) map.removeLayer(layer.decorator);
+        if (layer.markers) layer.markers.forEach(m => map.removeLayer(m));
+      });
+    };
+  }, [activeRoutes, dronesLocations, map]);
 
-    return null;
-  }
+  return null;
+}
+// Componente para mostrar fences persistentes
+function FenceLayer({ fences, map }) {
+  const layersRef = useRef({});
+
+  useEffect(() => {
+    if (!map || !map._container) return;
+
+    // Limpiar capas anteriores
+    Object.values(layersRef.current).forEach(layer => {
+      if (layer.polygon && map.hasLayer(layer.polygon)) map.removeLayer(layer.polygon);
+      if (layer.polyline && map.hasLayer(layer.polyline)) map.removeLayer(layer.polyline);
+    });
+    layersRef.current = {};
+
+    // Dibujar cada fence
+    Object.entries(fences).forEach(([droneUid, fence]) => {
+      const { vertices } = fence;
+      if (!vertices || vertices.length < 3) return;
+
+      const points = vertices.map(v => [v.lat, v.lng]);
+      const closedPoints = [...points, points[0]];
+
+      try {
+        // Polígono rojo translúcido
+        const polygon = L.polygon(closedPoints, {
+          color: '#ff4444',
+          weight: 3,
+          opacity: 0.8,
+          fillColor: '#ff4444',
+          fillOpacity: 0.25,
+          dashArray: '5, 10'
+        }).addTo(map);
+
+        // Línea que conecta los vértices
+        const polyline = L.polyline(points, {
+          color: '#ff4444',
+          weight: 2,
+          opacity: 0.6,
+          dashArray: '3, 8'
+        }).addTo(map);
+
+        layersRef.current[droneUid] = { polygon, polyline };
+      } catch (err) {
+        console.warn('Error dibujando fence:', err);
+      }
+    });
+
+    return () => {
+      Object.values(layersRef.current).forEach(layer => {
+        if (layer.polygon && map.hasLayer(layer.polygon)) map.removeLayer(layer.polygon);
+        if (layer.polyline && map.hasLayer(layer.polyline)) map.removeLayer(layer.polyline);
+      });
+    };
+  }, [fences, map]);
+
+  return null;
+}
+
+function ExclusionFenceLayer({ exclusionFences, map }) {
+  const layersRef = useRef({});
+
+  useEffect(() => {
+    if (!map || !map._container) return;
+
+    Object.values(layersRef.current).forEach(layer => {
+      if (layer.polygon && map.hasLayer(layer.polygon)) map.removeLayer(layer.polygon);
+    });
+    layersRef.current = {};
+
+    exclusionFences.forEach((fence, idx) => {
+      if (!fence || fence.length < 3) return;
+      const points = fence.map(v => [v.lat, v.lng]);
+      try {
+        const polygon = L.polygon(points, {
+          color: '#ff0000',
+          weight: 3,
+          opacity: 0.9,
+          fillColor: '#ff0000',
+          fillOpacity: 0.2,
+          dashArray: '8, 5'
+        }).addTo(map);
+        polygon.bindTooltip('🚫 Exclusion Zone', { permanent: false });
+        layersRef.current[idx] = { polygon };
+      } catch (err) {
+        console.warn('Error dibujando exclusion fence:', err);
+      }
+    });
+
+    return () => {
+      Object.values(layersRef.current).forEach(layer => {
+        if (layer.polygon && map.hasLayer(layer.polygon)) map.removeLayer(layer.polygon);
+      });
+    };
+  }, [exclusionFences, map]);
+
+  return null;
+}
+
 const fireIcon = new L.Icon({
   iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
   iconSize: [25, 41],
@@ -128,16 +222,15 @@ function FireWaypoints({ fireLocations, setFireLocations, addFireToMapAndDB, onF
   useMapEvents({
     click: async (e) => {
       if (controlMode) {
-        console.log('🎮 Modo control activo, ignorando creación de fuego');
+        //console.log('🎮 Modo control activo, ignorando creación de fuego');
         return;
       }
       
       if (!addFireMode) {
-        console.log('❌ Modo añadir fuegos desactivado. Actívalo desde el menú lateral.');
+        //console.log('❌ Modo añadir fuegos desactivado. Actívalo desde el menú lateral.');
         return;
       }
       
-      // Crear fuego DIRECTO en BD
       const newFire = {
         id: Date.now(),
         lat: e.latlng.lat,
@@ -146,13 +239,13 @@ function FireWaypoints({ fireLocations, setFireLocations, addFireToMapAndDB, onF
       
       addFireToMapAndDB(newFire);
       
-      console.log('➕ Fuego añadido directamente a BD:', newFire);
+      //console.log('➕ Fuego añadido directamente a BD:', newFire);
     },
   });
 
   const handleDragEnd = (id, e) => {
     if (controlMode) {
-      console.log('🎮 Modo control activo, ignorando drag de fuego');
+      //console.log('🎮 Modo control activo, ignorando drag de fuego');
       return;
     }
     
@@ -166,7 +259,7 @@ function FireWaypoints({ fireLocations, setFireLocations, addFireToMapAndDB, onF
 
   const handleRightClick = (id) => {
     if (controlMode) {
-      console.log('🎮 Modo control activo, ignorando eliminación de fuego');
+      //console.log('🎮 Modo control activo, ignorando eliminación de fuego');
       return;
     }
     
@@ -200,8 +293,10 @@ export default function Map({
   onControlModeSelect = () => {},
   onExitControlMode = () => {},
   addFireMode = false,
-  onRouteActivated = () => {},  // 👈 NUEVO
-  activeRoute = null,
+  onRouteActivated = () => {},
+  onFenceActivated = () => {}, 
+  activeRoutes = {},  
+  activeFences = {}, 
   onDroneClick = () => {}
 }) {
   const [drones, setDrones] = useState([]);
@@ -222,17 +317,16 @@ export default function Map({
   const [assignedFires, setAssignedFires] = useState({});
   const [droneBusy, setDroneBusy] = useState({});
   const [droneHomeLocation, setDroneHomeLocation] = useState(null);
+  const [localMissionType, setLocalMissionType] = useState('mission'); 
   
-  // Estado local para el modo control
   const [localControlMode, setLocalControlMode] = useState(controlMode);
   const [localSelectedControlDrone, setLocalSelectedControlDrone] = useState(selectedControlDrone);
   const [localControlWaypoints, setLocalControlWaypoints] = useState(controlWaypoints);
-  
-  // Estado para vista previa de ruta
   const [showRoutePreview, setShowRoutePreview] = useState(false);
   const [droneCurrentLocation, setDroneCurrentLocation] = useState(null);
   const [previewFullRoute, setPreviewFullRoute] = useState([]);
   const [includeReturn, setIncludeReturn] = useState(true);
+  const [localExclusionFences, setLocalExclusionFences] = useState([]); // [[{lat,lng},...], ...]
 
   // Sincronizar props con estado local
   useEffect(() => {
@@ -247,10 +341,9 @@ export default function Map({
     setLocalControlWaypoints(controlWaypoints);
   }, [controlWaypoints]);
 
-  // Efecto para obtener la ubicación del drone cuando se activa el modo control
   useEffect(() => {
     if (localSelectedControlDrone) {
-      console.log('🎮 Actualizando ubicación para:', localSelectedControlDrone.name);
+      //console.log('🎮 Actualizando ubicación para:', localSelectedControlDrone.name);
       
       const realTimeDrone = realTimeDrones[localSelectedControlDrone.uid];
       let currentLat, currentLng;
@@ -258,28 +351,28 @@ export default function Map({
       if (realTimeDrone && realTimeDrone.lat && realTimeDrone.lng) {
         currentLat = realTimeDrone.lat;
         currentLng = realTimeDrone.lng;
-        console.log('📍 Usando telemetría en tiempo real:', { lat: currentLat, lng: currentLng });
+        //console.log('📍 Usando telemetría en tiempo real:', { lat: currentLat, lng: currentLng });
       } else if (localSelectedControlDrone.telemetry?.latitude && localSelectedControlDrone.telemetry?.longitude) {
         currentLat = localSelectedControlDrone.telemetry.latitude;
         currentLng = localSelectedControlDrone.telemetry.longitude;
-        console.log('📍 Usando telemetría del objeto drone:', { lat: currentLat, lng: currentLng });
+        //console.log('📍 Usando telemetría del objeto drone:', { lat: currentLat, lng: currentLng });
       } else if (localSelectedControlDrone.latitude && localSelectedControlDrone.longitude) {
         currentLat = localSelectedControlDrone.latitude;
         currentLng = localSelectedControlDrone.longitude;
-        console.log('📍 Usando home location de la BD:', { lat: currentLat, lng: currentLng });
+        //console.log('📍 Usando home location de la BD:', { lat: currentLat, lng: currentLng });
       }
       
       if (currentLat && currentLng) {
         setDroneCurrentLocation({ lat: currentLat, lng: currentLng });
         setDroneHomeLocation({ lat: currentLat, lng: currentLng });
-        console.log(`🏠 Ubicación actual del drone establecida en: (${currentLat.toFixed(6)}, ${currentLng.toFixed(6)})`);
+        //console.log(`🏠 Ubicación actual del drone establecida en: (${currentLat.toFixed(6)}, ${currentLng.toFixed(6)})`);
       } else {
         console.warn('⚠️ No se pudo obtener ubicación para el drone');
         const defaultLat = 41.808905;
         const defaultLng = 2.163105;
         setDroneCurrentLocation({ lat: defaultLat, lng: defaultLng });
         setDroneHomeLocation({ lat: defaultLat, lng: defaultLng });
-        console.log(`🏠 Usando ubicación por defecto: (${defaultLat}, ${defaultLng})`);
+        //console.log(`🏠 Usando ubicación por defecto: (${defaultLat}, ${defaultLng})`);
       }
     }
   }, [localSelectedControlDrone, realTimeDrones]);
@@ -302,7 +395,6 @@ export default function Map({
     },
   };
 
-  // Función para construir la ruta completa según includeReturn
   const getFullRouteForPreview = (waypoints, withReturn) => {
     if (!withReturn || !droneHomeLocation || waypoints.length === 0) {
       return waypoints;
@@ -310,8 +402,8 @@ export default function Map({
     return [...waypoints, { ...droneHomeLocation, id: 'home', isReturn: true }];
   };
 
-  // Función para enviar la ruta por MQTT
   const handleSendRoute = async (fullRoute) => {
+    //console.log('🔍 FULL ROUTE RECIBIDO EN MAP:', JSON.stringify(fullRoute, null, 2));
     if (!mqttClient || !localSelectedControlDrone) {
       console.error('No hay conexión MQTT o drone seleccionado');
       alert('Error: No hay conexión MQTT');
@@ -323,10 +415,10 @@ export default function Map({
       waypoints: fullRoute.map(wp => ({
         lat: wp.lat,
         lon: wp.lng,
-        alt: 40
+        alt: wp.alt || 40
       }))
     };
-
+    //console.log('📤 MQTT MESSAGE:', JSON.stringify(mqttMessage, null, 2));
     const topic = `${localSelectedControlDrone.uid}_action`;
     
     return new Promise((resolve, reject) => {
@@ -335,12 +427,60 @@ export default function Map({
           console.error('Error enviando ruta:', err);
           reject(err);
         } else {
-          console.log(`✅ Ruta enviada a ${topic} con ${fullRoute.length} waypoints`);
+          //console.log(`✅ Ruta enviada a ${topic} con ${fullRoute.length} waypoints`);
           
-          // 👇 ACTUALIZAR LA RUTA ACTIVA EN EL MAPA
-          // Esto hará que se muestre la ruta en tiempo real
+          // 👇 ACTIVAR RUTA PERSISTENTE (AZUL)
           if (onRouteActivated) {
             onRouteActivated(localSelectedControlDrone.uid, fullRoute);
+          }
+          
+          //console.log('🎮 Cerrando modo control - volviendo a vista normal');
+          setLocalControlMode(false);
+          setLocalSelectedControlDrone(null);
+          setLocalControlWaypoints([]);
+          setShowRoutePreview(false);
+          
+          if (onExitControlMode) {
+            onExitControlMode();
+          }
+          
+          resolve();
+        }
+      });
+    });
+  };
+
+  const handleSendFence = async (vertices) => {
+    console.log('🚧 Enviando FENCE con vértices:', vertices);
+    if (!mqttClient || !localSelectedControlDrone) {
+      console.error('No hay conexión MQTT o drone seleccionado');
+      alert('Error: No hay conexión MQTT');
+      return;
+    }
+
+    const mqttMessage = {
+      action: 'FENCE',
+      vertices: vertices.map(v => ({
+        lat: v.lat,
+        lon: v.lng
+      })),
+      action_on_break: 'RTL'
+    };
+    
+    console.log('📤 MQTT FENCE MESSAGE:', JSON.stringify(mqttMessage, null, 2));
+    const topic = `${localSelectedControlDrone.uid}_action`;
+    
+    return new Promise((resolve, reject) => {
+      mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, (err) => {
+        if (err) {
+          console.error('Error enviando fence:', err);
+          reject(err);
+        } else {
+          console.log(`✅ Fence enviado a ${topic} con ${vertices.length} vértices`);
+          
+          // 👇 ACTIVAR FENCE PERSISTENTE
+          if (onFenceActivated) {
+            onFenceActivated(localSelectedControlDrone.uid, vertices);
           }
           
           console.log('🎮 Cerrando modo control - volviendo a vista normal');
@@ -359,9 +499,46 @@ export default function Map({
     });
   };
 
-  // Función para salir del modo control
+  const handleSendExclusionFence = async (zones) => {
+    if (!mqttClient || !localSelectedControlDrone) {
+      alert('Error: No hay conexión MQTT');
+      return;
+    }
+    const mqttMessage = {
+      action: 'EXCLUSION_FENCE',
+      vertices: zones.map(zone => zone.map(v => ({ lat: v.lat, lon: v.lng }))),
+      action_on_break: 'RTL'
+    };
+    const topic = `${localSelectedControlDrone.uid}_action`;
+    return new Promise((resolve, reject) => {
+      mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, (err) => {
+        if (err) { reject(err); return; }
+        console.log(`✅ Exclusion fence enviado`);
+        setLocalExclusionFences(prev => [...prev, ...zones]);
+        setLocalControlMode(false);
+        setLocalSelectedControlDrone(null);
+        setLocalControlWaypoints([]);
+        setShowRoutePreview(false);
+        if (onExitControlMode) onExitControlMode();
+        resolve();
+      });
+    });
+  };
+
+  const handleClearAllFences = async () => {
+    if (!mqttClient || !localSelectedControlDrone) return;
+    const mqttMessage = { action: 'CLEAR_EXCLUSION_FENCES' };  // ← nombre nuevo
+    const topic = `${localSelectedControlDrone.uid}_action`;
+    mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, (err) => {
+      if (!err) {
+        console.log('✅ Exclusion fences borradas');
+        setLocalExclusionFences([]);
+      }
+    });
+  };
+
   const handleExitControl = () => {
-    console.log('🎮 Saliendo del modo control');
+    //console.log('🎮 Saliendo del modo control');
     setLocalControlMode(false);
     setLocalSelectedControlDrone(null);
     setLocalControlWaypoints([]);
@@ -380,23 +557,27 @@ export default function Map({
     }
   };
 
-  const handlePreviewRoute = (show, fullRoute) => {
+  const handlePreviewRoute = (show, data, type = 'mission') => {
+    console.log('👁️ Preview route:', { show, type, dataLength: data?.length });
     setShowRoutePreview(show);
-    if (show && fullRoute) {
-      setPreviewFullRoute(fullRoute);
+    setLocalMissionType(type);
+    if (show && data) {
+      setPreviewFullRoute(data);
+    } else {
+      setPreviewFullRoute([]);
     }
   };
 
   const handleIncludeReturnChange = (checked) => {
     setIncludeReturn(checked);
-    if (showRoutePreview && localControlWaypoints.length > 0) {
+    if (showRoutePreview && localControlWaypoints.length > 0 && localMissionType === 'mission') {
       const newFullRoute = getFullRouteForPreview(localControlWaypoints, checked);
       setPreviewFullRoute(newFullRoute);
     }
   };
 
   const completeMission = (droneUid, fireId) => {
-    console.log(`🏁 Misión completada: drone ${droneUid} liberado del fuego ${fireId}`);
+    //console.log(`🏁 Misión completada: drone ${droneUid} liberado del fuego ${fireId}`);
     
     setDroneBusy(prev => {
       const newBusy = { ...prev };
@@ -422,13 +603,13 @@ export default function Map({
         if (error) {
           console.error('Error actualizando misión completada:', error);
         } else {
-          console.log(`✅ Misión ${fireId} marcada como completada en BD`);
+          //console.log(`✅ Misión ${fireId} marcada como completada en BD`);
         }
       });
   };
 
   const handleFireRemoved = (fireId) => {
-    console.log(`🗑️ Fuego eliminado: ${fireId}, limpiando asignaciones`);
+    //console.log(`🗑️ Fuego eliminado: ${fireId}, limpiando asignaciones`);
     
     setAssignedFires((prev) => {
       const newAssigned = { ...prev };
@@ -450,7 +631,6 @@ export default function Map({
   };
 
   const addFireToMapAndDB = async (fire) => {
-    // Verificar si ya existe en la misma ubicación
     const exists = fireLocations.some(
       (f) =>
         Math.abs(f.lat - fire.lat) < 0.0001 &&
@@ -477,7 +657,7 @@ export default function Map({
     }
 
     const savedFire = data[0];
-    console.log("✅ Misión guardada en BD:", savedFire);
+    //console.log("✅ Misión guardada en BD:", savedFire);
 
     const newFire = {
       id: savedFire.id,
@@ -489,7 +669,7 @@ export default function Map({
   };
   
   const getClosestDrone = (droneList, fire, droneBusyMap) => {
-    console.log("🔍 Buscando drone para fuego:", fire.id);
+    //console.log("🔍 Buscando drone para fuego:", fire.id);
     
     const availableDrones = droneList.filter(
       (drone) => 
@@ -499,7 +679,7 @@ export default function Map({
         !droneBusyMap[drone.uid]
     );
     
-    console.log("Drones disponibles:", availableDrones.map(d => d.uid));
+    //console.log("Drones disponibles:", availableDrones.map(d => d.uid));
     
     if (availableDrones.length === 0) return null;
     
@@ -515,10 +695,9 @@ export default function Map({
     return dronesWithDistance[0].drone;
   };
 
-  // Inicialización del mapa
   useEffect(() => {
     const initializeMap = async () => {
-      console.log('🔄 Inicializando mapa - sincronizando con BD');
+      //console.log('🔄 Inicializando mapa - sincronizando con BD');
       
       setAssignedFires({});
       setDroneBusy({});
@@ -535,7 +714,7 @@ export default function Map({
         return;
       }
 
-      console.log('📦 Misiones encontradas en BD:', missions?.length || 0);
+      //console.log('📦 Misiones encontradas en BD:', missions?.length || 0);
 
       if (missions && missions.length > 0) {
         const firesFromDB = missions.map(m => ({
@@ -557,10 +736,10 @@ export default function Map({
         setFireLocations(firesFromDB);
         setAssignedFires(newAssignedFires);
         setDroneBusy(newDroneBusy);
-        console.log('✅ Misiones cargadas:', firesFromDB.length);
-        console.log('📋 Drones ocupados:', Object.keys(newDroneBusy));
+        //console.log('✅ Misiones cargadas:', firesFromDB.length);
+        //console.log('📋 Drones ocupados:', Object.keys(newDroneBusy));
       } else {
-        console.log('📭 No hay misiones en BD');
+        //console.log('📭 No hay misiones en BD');
       }
       
       setSavedRoutes(missions || []);
@@ -569,7 +748,6 @@ export default function Map({
     initializeMap();
   }, []);
 
-  // Cargar drones
   useEffect(() => {
     const fetchDrones = async () => {
       const { data, error } = await supabase.from("DroneList").select("*");
@@ -582,7 +760,6 @@ export default function Map({
     fetchDrones();
   }, []);
 
-  // Realtime drones
   useEffect(() => {
     const channel = supabase
       .channel("realtime-drones")
@@ -590,7 +767,7 @@ export default function Map({
         "postgres_changes",
         { event: "*", schema: "public", table: "DroneList" },
         (payload) => {
-          console.log("Change on drone list:", payload);
+          //console.log("Change on drone list:", payload);
 
           const newDrone = payload.new;
           const oldDrone = payload.old;
@@ -618,7 +795,6 @@ export default function Map({
     };
   }, []);
 
-  // Realtime missions
   useEffect(() => {
     const channel = supabase
       .channel("realtime-missions")
@@ -626,7 +802,7 @@ export default function Map({
         "postgres_changes",
         { event: "*", schema: "public", table: "missions" },
         (payload) => {
-          console.log("Change on missions:", payload);
+          //console.log("Change on missions:", payload);
           const { new: newMission, old: oldMission } = payload;
 
           setSavedRoutes((prev) => {
@@ -679,19 +855,30 @@ export default function Map({
 
       return updatedDrones;
     });
-  };
+    setRealTimeDrones(prev => ({
+      ...prev,
+      [uid]: { 
+        lat: latitude, 
+        lng: longitude, 
+        alt: altitudeValue, 
+        heading, 
+        telemetry: { latitude, longitude, altitude_asl: altitudeValue, heading, ...telemetry } 
+      }
+    }));
 
-  // Efecto de asignación de drones
+  };
+  
+
   useEffect(() => {
     if (addFireMode) {
-      console.log('🚫 Modo añadir fuegos activo - NO se asignan drones');
+      //console.log('🚫 Modo añadir fuegos activo - NO se asignan drones');
       return;
     }
     
-    console.group('🔄 Asignando fuegos a drones');
-    console.log('Fuegos actuales:', fireLocations);
-    console.log('Fuegos ya asignados:', assignedFires);
-    console.log('Drones ocupados:', droneBusy);
+    //console.group('🔄 Asignando fuegos a drones');
+    //console.log('Fuegos actuales:', fireLocations);
+    //console.log('Fuegos ya asignados:', assignedFires);
+    //console.log('Drones ocupados:', droneBusy);
     
     if (drones.length === 0 || fireLocations.length === 0) {
       setFireAssignments([]);
@@ -703,10 +890,10 @@ export default function Map({
       fire => !assignedFires[fire.id]
     );
     
-    console.log('Fuegos pendientes:', pendingFires.length);
+    //console.log('Fuegos pendientes:', pendingFires.length);
     
     if (pendingFires.length === 0) {
-      console.log('No hay fuegos pendientes');
+      //console.log('No hay fuegos pendientes');
       console.groupEnd();
       return;
     }
@@ -725,7 +912,7 @@ export default function Map({
       );
       
       if (availableDrones.length === 0) {
-        console.log(`❌ No hay drones disponibles para fuego ${fire.id}`);
+        //console.log(`❌ No hay drones disponibles para fuego ${fire.id}`);
         continue;
       }
       
@@ -744,7 +931,7 @@ export default function Map({
       }
       
       if (closestDrone) {
-        console.log(`✅ Fuego ${fire.id} asignado a drone ${closestDrone.uid}`);
+        //console.log(`✅ Fuego ${fire.id} asignado a drone ${closestDrone.uid}`);
         
         currentDroneBusy[closestDrone.uid] = true;
         newAssignedFires[fire.id] = closestDrone.uid;
@@ -765,7 +952,7 @@ export default function Map({
             if (error) {
               console.error('Error actualizando drone en BD:', error);
             } else {
-              console.log(`✅ BD actualizada: fuego ${fire.id} → drone ${closestDrone.uid}`);
+              //console.log(`✅ BD actualizada: fuego ${fire.id} → drone ${closestDrone.uid}`);
             }
           });
       }
@@ -783,7 +970,7 @@ export default function Map({
   const toggleFires = () => setShowFires((prev) => !prev);
 
   const fireRoutes = useMemo(() => {
-    console.log('🔄 Recalculando fireRoutes, misiones:', savedRoutes.length);
+    //console.log('🔄 Recalculando fireRoutes, misiones:', savedRoutes.length);
     
     return savedRoutes
       .filter((mission) => {
@@ -817,12 +1004,64 @@ export default function Map({
             savedWaypoints={mission.waypoints}
             missionId={mission.id}
             onRouteGenerated={(routeData) => {
-              console.log(`🎯 Ruta generada para misión ${mission.id}`);
+              //console.log(`🎯 Ruta generada para misión ${mission.id}`);
             }}
           />
         );
       });
   }, [savedRoutes, drones, mqttClient]);
+
+  // Componente para seleccionar drone por clic en el mapa
+  function ClickToSelectDrone({ map, drones, realTimeDrones, onDroneClick }) {
+    useMapEvents({
+      click: (e) => {
+        // Pequeño delay para dar oportunidad al marcador de procesar su clic primero
+        setTimeout(() => {
+          const clickLat = e.latlng.lat;
+          const clickLng = e.latlng.lng;
+          
+          // Encontrar el drone más cercano al clic
+          let closestDrone = null;
+          let minDistance = 50; // Radio máximo en metros para considerar selección
+          
+          drones.forEach(drone => {
+            if (!drone.show) return;
+            
+            const rtData = realTimeDrones[drone.uid] || {};
+            const droneLat = rtData.lat ?? drone.latitude;
+            const droneLng = rtData.lng ?? drone.longitude;
+            
+            if (!droneLat || !droneLng) return;
+            
+            // Calcular distancia en metros (aproximación)
+            const R = 6371000; // Radio de la Tierra en metros
+            const φ1 = clickLat * Math.PI / 180;
+            const φ2 = droneLat * Math.PI / 180;
+            const Δφ = (droneLat - clickLat) * Math.PI / 180;
+            const Δλ = (droneLng - clickLng) * Math.PI / 180;
+            
+            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+                      Math.cos(φ1) * Math.cos(φ2) *
+                      Math.sin(Δλ/2) * Math.sin(Δλ/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            const distance = R * c;
+            
+            if (distance < minDistance) {
+              minDistance = distance;
+              closestDrone = drone;
+            }
+          });
+          
+          if (closestDrone && minDistance < 30) {
+            console.log('🎯 Drone seleccionado por clic cercano:', closestDrone.uid, 'distancia:', minDistance.toFixed(2), 'm');
+            onDroneClick(closestDrone);
+          }
+        }, 100);
+      }
+    });
+    
+    return null;
+  }
 
   return (
     <>
@@ -830,7 +1069,7 @@ export default function Map({
         onDroneUpdate={handleDroneUpdate}
         onClientReady={setMqttClient}
         onFireDetection={(fire) => {
-          console.log("New fire from MQTT:", fire);
+          //console.log("New fire from MQTT:", fire);
           addFireToMapAndDB(fire);
         }}
         onMissionComplete={completeMission}
@@ -855,6 +1094,9 @@ export default function Map({
         whenCreated={(mapInstance) => (mapRef.current = mapInstance)}
         ref={setMapInstance}
         maxZoom={22}
+        // 👇 AÑADE ESTAS OPCIONES
+        doubleClickZoom={false}
+        tap={false}
       >
         <TileLayer
           attribution={tileLayers[mapStyle].attribution}
@@ -862,7 +1104,6 @@ export default function Map({
           maxZoom={22}
         />
 
-        {/* FireWaypoints - solo en modo normal */}
         {!localControlMode && (
           <FireWaypoints
             fireLocations={fireLocations}
@@ -874,7 +1115,6 @@ export default function Map({
           />
         )}
 
-        {/* MapOverlays - solo en modo normal */}
         {!localControlMode && (
           <MapOverlays
             showVolantOverlay={showVolantOverlay}
@@ -884,36 +1124,38 @@ export default function Map({
 
         {showAero && <AeroZonesLayer />}
 
-        {/* ControlWaypoints - solo en modo control */}
         <ControlWaypoints
           waypoints={localControlWaypoints}
           setWaypoints={(newWaypoints) => {
-            console.log('🔄 Actualizando waypoints:', newWaypoints);
+            console.log('🔄 Actualizando puntos:', newWaypoints);
             setLocalControlWaypoints(newWaypoints);
             if (setControlWaypoints) {
               setControlWaypoints(newWaypoints);
             }
           }}
           enabled={localControlMode && localSelectedControlDrone}
+          missionType={localMissionType} // 👈 Esta línea debe existir
         />
 
-        {/* Vista previa de la ruta */}
         <RoutePreview
           waypoints={showRoutePreview ? previewFullRoute : []}
           droneLocation={droneCurrentLocation}
-          homeLocation={includeReturn ? droneHomeLocation : null}
+          homeLocation={localMissionType === 'mission' && includeReturn ? droneHomeLocation : null}
           map={mapInstance}
-          enabled={showRoutePreview && localControlMode && localControlWaypoints.length > 0}
+          enabled={showRoutePreview && localControlMode && localControlWaypoints.length > (localMissionType === 'fence' ? 2 : 0)}
+          previewType={localMissionType}  // 👈 AÑADE ESTA LÍNEA (o cámbiala si ya existe)
         />
 
-        {/* Drones - filtrados en modo control */}
         <SeeDronesMap 
           drones={localControlMode && localSelectedControlDrone ? [localSelectedControlDrone] : drones}
-          onDroneClick={onDroneClick}
+          onDroneClick={(drone) => {
+            console.log('🖱️ SeeDronesMap click detectado en map.jsx:', drone?.uid);
+            onDroneClick(drone);
+          }}
           busyDrones={droneBusy}
+          realTimeDrones={realTimeDrones}
         />
         
-        {/* Marcadores de fuego - solo en modo normal */}
         {!localControlMode && savedRoutes.map((mission) => (
           <Marker
             key={`fire-${mission.id}`}
@@ -922,25 +1164,51 @@ export default function Map({
           />
         ))}
 
-        {/* Rutas de fuego - solo en modo normal */}
         {!localControlMode && fireRoutes}
 
-        {activeRoute && activeRoute.waypoints && activeRoute.waypoints.length > 0 && (
-          <ActiveRouteLayer
-            waypoints={activeRoute.waypoints}
-            droneLocation={droneCurrentLocation}
+        {/* 👇 RUTAS ACTIVAS PERSISTENTES (AZULES) */}
+        {Object.keys(activeRoutes).length > 0 && (
+          <ActiveRoutesLayer
+            activeRoutes={activeRoutes}
+            dronesLocations={realTimeDrones}
             map={mapInstance}
           />
         )}
 
+        {Object.keys(activeFences).length > 0 && (
+          <FenceLayer
+            fences={activeFences}
+            map={mapInstance}
+          />
+        )}
+
+        <ExclusionFenceLayer
+          exclusionFences={localExclusionFences}
+          map={mapInstance}
+        />
+
+
+        {!localControlMode && (
+          <ClickToSelectDrone 
+            map={mapInstance} 
+            drones={drones} 
+            realTimeDrones={realTimeDrones}
+            onDroneClick={onDroneClick}
+          />
+        )}
+        
+
+
       </MapContainer>
 
-      {/* Panel de control del drone */}
       {localControlMode && localSelectedControlDrone && (
         <DroneControlPanel
           drone={localSelectedControlDrone}
           onExitControl={handleExitControl}
           onSendRoute={handleSendRoute}
+          onSendFence={handleSendFence}
+          onSendExclusionFence={handleSendExclusionFence} 
+          onClearAllFences={handleClearAllFences}  
           onPreviewRoute={handlePreviewRoute}
           onIncludeReturnChange={handleIncludeReturnChange}
           waypoints={localControlWaypoints}
@@ -977,7 +1245,7 @@ export default function Map({
           }}
           onClose={() => setSelectedDrone(null)}
           onControlDrone={(drone) => {
-            console.log('🔴 onControlDrone llamado desde map.jsx');
+            //console.log('🔴 onControlDrone llamado desde map.jsx');
             setLocalControlMode(true);
             setLocalSelectedControlDrone(drone);
             setLocalControlWaypoints([]);

@@ -1,71 +1,82 @@
+// src/components/DroneControl/RoutePreview.jsx
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
-import 'leaflet-polylinedecorator';
 
-export default function RoutePreview({ waypoints, droneLocation, homeLocation, map, enabled = false }) {
-  const layersRef = useRef({ polyline: null, decorator: null });
+export default function RoutePreview({ 
+  waypoints, 
+  droneLocation, 
+  homeLocation, 
+  map, 
+  enabled = false,
+  previewType = 'mission'
+}) {
+  const layersRef = useRef({});
 
   useEffect(() => {
-    if (!enabled || !map || waypoints.length < 2) {
-      if (layersRef.current.polyline) {
-        map.removeLayer(layersRef.current.polyline);
-        layersRef.current.polyline = null;
-      }
-      if (layersRef.current.decorator) {
-        map.removeLayer(layersRef.current.decorator);
-        layersRef.current.decorator = null;
-      }
+    // Limpiar capas anteriores
+    if (layersRef.current.polygon) {
+      map?.removeLayer(layersRef.current.polygon);
+    }
+    if (layersRef.current.polyline) {
+      map?.removeLayer(layersRef.current.polyline);
+    }
+    layersRef.current = {};
+
+    if (!enabled || !map) {
       return;
     }
 
-    // Construir la ruta completa: droneLocation -> waypoints
-    const allPoints = [
-      [droneLocation.lat, droneLocation.lng],
-      ...waypoints.map(wp => [wp.lat, wp.lng])
-    ];
-    
-    // 👇 Solo añadir punto de retorno si homeLocation existe
-    if (homeLocation && waypoints.length > 0) {
-      allPoints.push([homeLocation.lat, homeLocation.lng]);
+    console.log('🎨 RoutePreview - previewType:', previewType, 'waypoints:', waypoints?.length);
+
+    try {
+      if (previewType === 'fence' && waypoints && waypoints.length >= 3) {
+        // Dibujar polígono para FENCE
+        const points = waypoints.map(wp => [wp.lat, wp.lng]);
+        const closedPoints = [...points, points[0]];
+        
+        const polygon = L.polygon(closedPoints, {
+          color: '#ff4444',
+          weight: 3,
+          opacity: 0.8,
+          fillColor: '#ff4444',
+          fillOpacity: 0.25,
+          dashArray: '5, 10'
+        }).addTo(map);
+
+        polygon.bindPopup(`
+          <b>🚧 Zona de Geofence</b><br>
+          El drone no puede salir de esta área.<br>
+          Si intenta salir → <b style="color: #ff4444;">RTL (Return to Launch)</b>
+        `);
+        
+        layersRef.current = { polygon };
+        console.log('✅ Fence preview dibujado');
+      } 
+      else if (previewType === 'mission' && waypoints && waypoints.length >= 1 && droneLocation) {
+        // Ruta para MISSION
+        const allPoints = [[droneLocation.lat, droneLocation.lng]];
+        waypoints.forEach(wp => allPoints.push([wp.lat, wp.lng]));
+        if (homeLocation) allPoints.push([homeLocation.lat, homeLocation.lng]);
+
+        const polyline = L.polyline(allPoints, {
+          color: '#ff6b6b',
+          weight: 3,
+          opacity: 0.8,
+          dashArray: '5, 10'
+        }).addTo(map);
+
+        layersRef.current = { polyline };
+        console.log('✅ Mission preview dibujado');
+      }
+    } catch (err) {
+      console.warn('Error en RoutePreview:', err);
     }
 
-    const polyline = L.polyline(allPoints, {
-      color: '#ff6b6b',
-      weight: 3,
-      opacity: 0.8,
-      dashArray: '5, 10'
-    }).addTo(map);
-
-    const decorator = L.polylineDecorator(polyline, {
-      patterns: [
-        {
-          offset: 25,
-          repeat: 100,
-          symbol: L.Symbol.arrowHead({
-            pixelSize: 12,
-            polygon: true,
-            pathOptions: {
-              color: '#ff6b6b',
-              weight: 1,
-              fillOpacity: 0.9,
-              fillColor: '#ff6b6b'
-            },
-          }),
-        },
-      ],
-    }).addTo(map);
-
-    layersRef.current = { polyline, decorator };
-
     return () => {
-      if (layersRef.current.polyline) {
-        map.removeLayer(layersRef.current.polyline);
-      }
-      if (layersRef.current.decorator) {
-        map.removeLayer(layersRef.current.decorator);
-      }
+      if (layersRef.current.polygon) map?.removeLayer(layersRef.current.polygon);
+      if (layersRef.current.polyline) map?.removeLayer(layersRef.current.polyline);
     };
-  }, [waypoints, droneLocation, homeLocation, map, enabled]);
+  }, [waypoints, droneLocation, homeLocation, map, enabled, previewType]);
 
   return null;
 }

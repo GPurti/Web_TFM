@@ -155,3 +155,25 @@
 .droneInfoTab:hover tbody {
   max-height: none;
 }
+
+.droneContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+}
+
+.droneWithOrientation {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: center center;
+}
+
+.droneBody {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

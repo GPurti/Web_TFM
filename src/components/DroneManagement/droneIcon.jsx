@@ -10,13 +10,15 @@ const droneValuesMap = {
   longitude: "Longitude",
   altitude_ahl: "Altitude AHL",
   altitude_agl: "Altitude AGL",
-  altitude_asl: "Altitude ASL",
+  altitude_asl: "Altitude AMSL",
   airSpeed: "Air Speed",
   groundSpeed: "Ground Speed",
   heading: "Heading",
   pitch: "Pitch",
   roll: "Roll",
-  yaw: "Yaw"
+  yaw: "Yaw",
+  flight_mode: "Mode",
+  armed: "Armed"
 };
 
 export default function DroneIcon({
@@ -52,11 +54,14 @@ export default function DroneIcon({
               {activeTelemetry.map((item, index) => (
                 <tr key={index}>
                   <td className="labelCell">{item.label}:</td>
-                  <td className="cellTruncate" title={String(item.value)}>
+                  <td className="cellTruncate" title={String(item.value ?? '—')}>
                     {item.key === 'latitude' ? latitude :
-                     item.key === 'longitude' ? longitude :
-                     item.key === 'altitude_ahl' ? `${altitude} m` :
-                     item.value ?? '—'}
+                    item.key === 'longitude' ? longitude :
+                    item.value != null ? (
+                      ['altitude_ahl', 'altitude_agl', 'altitude_asl'].includes(item.key)
+                        ? `${item.value} m`
+                        : item.value
+                    ) : '—'}
                   </td>
                 </tr>
               ))}

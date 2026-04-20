@@ -183,3 +183,102 @@
 .return-waypoint::before {
   content: "🏠 ";
 }
+
+.waypoints-table-container {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-top: 1px solid #dee2e6;
+  border-bottom: 1px solid #dee2e6;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.waypoints-table-container h4 {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+  color: #495057;
+}
+
+.waypoints-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.waypoints-table th,
+.waypoints-table td {
+  padding: 8px 6px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.waypoints-table th {
+  background-color: #e9ecef;
+  font-weight: 600;
+  color: #212529;
+  position: sticky;
+  top: 0;
+}
+
+.coord-cell {
+  font-family: monospace;
+  font-size: 11px;
+  color: #495057;
+}
+
+.alt-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.alt-input {
+  width: 70px;
+  padding: 4px 6px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.alt-input:focus {
+  outline: none;
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.25);
+}
+
+.alt-unit {
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.altitude-info {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #6c757d;
+  font-style: italic;
+}
+
+.return-info {
+  padding: 8px 16px;
+  background: #e8f5e9;
+  font-size: 11px;
+  color: #2e7d32;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Ajuste responsive para móviles */
+@media (max-width: 480px) {
+  .waypoints-table-container {
+    max-height: 200px;
+  }
+  
+  .coord-cell {
+    font-size: 9px;
+  }
+  
+  .alt-input {
+    width: 55px;
+    font-size: 10px;
+  }
+}

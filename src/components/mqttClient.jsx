@@ -45,12 +45,12 @@ export default function MqttClient({
   // Cargar UIDs conocidos al iniciar
   useEffect(() => {
     const fetchDroneUids = async () => {
-      console.log('🔍 Cargando drones existentes...');
+      //console.log('🔍 Cargando drones existentes...');
       const { data, error } = await supabase.from('DroneList').select('uid');
       if (!error) {
         knownUidsRef.current = data.map((d) => d.uid);
         data.forEach(d => registeredDronesRef.current.add(d.uid));
-        console.log('📋 Drones en BD:', Array.from(registeredDronesRef.current));
+        //console.log('📋 Drones en BD:', Array.from(registeredDronesRef.current));
       } else {
         console.error('❌ Error cargando drones:', error);
       }
@@ -61,26 +61,26 @@ export default function MqttClient({
   // Función para registrar un nuevo drone
   const registerNewDrone = async (droneUid, telemetryData = {}) => {
     const callId = ++messageCounterRef.current;
-    console.log(`[${callId}] 🆕 Intentando registrar:`, droneUid);
+    //console.log(`[${callId}] 🆕 Intentando registrar:`, droneUid);
     
     // BARRERA 1: Set permanente
     if (registeredDronesRef.current.has(droneUid)) {
-      console.log(`[${callId}] 🚫 BLOQUEADO por registeredDronesRef:`, droneUid);
+      //console.log(`[${callId}] 🚫 BLOQUEADO por registeredDronesRef:`, droneUid);
       return null;
     }
 
     // BARRERA 2: Registro en curso
     if (pendingRegistrationRef.current.has(droneUid)) {
-      console.log(`[${callId}] ⏳ BLOQUEADO por pendingRegistrationRef:`, droneUid);
+      //console.log(`[${callId}] ⏳ BLOQUEADO por pendingRegistrationRef:`, droneUid);
       return null;
     }
 
-    console.log(`[${callId}] ✅ Pasando barreras, marcando como pendiente...`);
+    //console.log(`[${callId}] ✅ Pasando barreras, marcando como pendiente...`);
     pendingRegistrationRef.current.add(droneUid);
 
     try {
       // BARRERA 3: Verificar BD
-      console.log(`[${callId}] 🔍 Verificando en BD:`, droneUid);
+      //console.log(`[${callId}] 🔍 Verificando en BD:`, droneUid);
       const { data: existingDrone, error: selectError } = await supabase
         .from('DroneList')
         .select('uid')
@@ -93,12 +93,12 @@ export default function MqttClient({
       }
 
       if (existingDrone) {
-        console.log(`[${callId}] ⚠️ Ya existe en BD:`, droneUid);
+        //console.log(`[${callId}] ⚠️ Ya existe en BD:`, droneUid);
         registeredDronesRef.current.add(droneUid);
         return null;
       }
 
-      console.log(`[${callId}] 📦 Insertando nuevo drone...`);
+      //console.log(`[${callId}] 📦 Insertando nuevo drone...`);
       const newDrone = {
         uid: droneUid,
         name: telemetryData.name || `Drone ${droneUid.slice(0, 4)}`,
@@ -126,17 +126,17 @@ export default function MqttClient({
         return null;
       }
 
-      console.log(`[${callId}] ✅ REGISTRO EXITOSO:`, data[0]);
+      //console.log(`[${callId}] ✅ REGISTRO EXITOSO:`, data[0]);
       
       // 🚨 MARCAR COMO REGISTRADO PERMANENTEMENTE
       registeredDronesRef.current.add(droneUid);
-      console.log(`[${callId}] 📝 registeredDronesRef actualizado:`, Array.from(registeredDronesRef.current));
+      //console.log(`[${callId}] 📝 registeredDronesRef actualizado:`, Array.from(registeredDronesRef.current));
       
       return data[0];
 
     } finally {
       pendingRegistrationRef.current.delete(droneUid);
-      console.log(`[${callId}] 🔓 pendingRegistrationRef liberado`);
+      //console.log(`[${callId}] 🔓 pendingRegistrationRef liberado`);
     }
   };
 
@@ -155,7 +155,7 @@ export default function MqttClient({
     clientRef.current = mqttClient;
 
     mqttClient.on('connect', () => {
-      console.log('✅ Connected to MQTT broker');
+      //console.log('✅ Connected to MQTT broker');
       mqttClient.subscribe('#', { qos: 0 }, (err) => {
         if (err) console.error('Subscription error:', err.message);
       });
@@ -164,15 +164,15 @@ export default function MqttClient({
 
     mqttClient.on('message', async (topic, message) => {
       const msgId = ++messageCounterRef.current;
-      console.log(`\n[${msgId}] 📨 MENSAJE RECIBIDO:`, topic);
+      //console.log(`\n[${msgId}] 📨 MENSAJE RECIBIDO:`, topic);
 
       try {
         const payload = JSON.parse(message.toString());
-        console.log(`[${msgId}] 📦 Payload:`, payload);
+        //console.log(`[${msgId}] 📦 Payload:`, payload);
 
         // Detección de incendios
         if (topic === 'fire_detection' && payload.coordinates) {
-          console.log(`[${msgId}] 🔥 Fire detection`);
+          //console.log(`[${msgId}] 🔥 Fire detection`);
           const { lat, lon } = payload.coordinates;
           onFireDetectionRef.current?.({
             id: Date.now(),
@@ -185,24 +185,24 @@ export default function MqttClient({
         // 📡 TELEMETRÍA
         if (topic.endsWith('_telemetry')) {
           const droneUid = topic.replace('_telemetry', '');
-          console.log(`[${msgId}] 📡 Telemetría de:`, droneUid);
-          console.log(`[${msgId}] 🎯 registeredDronesRef contiene:`, Array.from(registeredDronesRef.current));
+          //console.log(`[${msgId}] 📡 Telemetría de:`, droneUid);
+          //console.log(`[${msgId}] 🎯 registeredDronesRef contiene:`, Array.from(registeredDronesRef.current));
           
           if (!registeredDronesRef.current.has(droneUid)) {
-            console.log(`[${msgId}] 🆕 Drone NO registrado, intentando registrar...`);
+            //console.log(`[${msgId}] 🆕 Drone NO registrado, intentando registrar...`);
             const newDrone = await registerNewDrone(droneUid, payload);
             if (newDrone && onNewDroneDetectedRef.current) {
-              console.log(`[${msgId}] 📢 Notificando nuevo drone...`);
+              //console.log(`[${msgId}] 📢 Notificando nuevo drone...`);
               onNewDroneDetectedRef.current(newDrone);
             }
           } else {
-            console.log(`[${msgId}] ✅ Drone YA registrado, solo telemetría`);
+            //console.log(`[${msgId}] ✅ Drone YA registrado, solo telemetría`);
           }
 
           // Siempre procesar telemetría
           const { latitude, longitude, altitude_asl, heading, ...rest } = payload;
           if (latitude && longitude) {
-            console.log(`[${msgId}] 📍 Actualizando posición:`, { latitude, longitude });
+            //console.log(`[${msgId}] 📍 Actualizando posición:`, { latitude, longitude });
             onDroneUpdateRef.current?.(
               droneUid,
               latitude,
