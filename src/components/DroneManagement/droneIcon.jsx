@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import './droneIcon.css';
 import DroneSvg from '../../assets/iconeDrone.svg?react';
 
@@ -18,7 +18,7 @@ const droneValuesMap = {
   roll: "Roll",
   yaw: "Yaw",
   flight_mode: "Mode",
-  armed: "Armed"
+  armed: "Status",
 };
 
 export default function DroneIcon({
@@ -40,6 +40,21 @@ export default function DroneIcon({
       value
     }));
 
+  const lastModeRef = useRef(null);
+  const lastArmedRef = useRef(null);
+
+  // Guardar último modo válido (ignorar STABILIZE)
+  const currentMode = telemetry?.flight_mode;
+  const currentArmed = telemetry?.armed;
+
+  if (currentMode && currentMode !== 'STABILIZE') {
+    lastModeRef.current = currentMode;
+    lastArmedRef.current = currentArmed;
+  }
+
+  const displayMode = lastModeRef.current;
+  const displayArmed = lastArmedRef.current;
+
   return (
     <div className="droneIcon">
       {speechBubbleVisible && (
@@ -55,9 +70,15 @@ export default function DroneIcon({
                 <tr key={index}>
                   <td className="labelCell">{item.label}:</td>
                   <td className="cellTruncate" title={String(item.value ?? '—')}>
-                    {item.key === 'latitude' ? latitude :
-                    item.key === 'longitude' ? longitude :
-                    item.value != null ? (
+                    {item.key === 'armed' ? (
+                      <span style={{ fontWeight: 'bold', color: displayArmed ? '#ff4444' : '#44aa44' }}>
+                        {displayArmed === true ? 'ARMED' : displayArmed === false ? 'DISARMED' : '—'}
+                      </span>
+                    ) : item.key === 'flight_mode' ? (
+                      <span style={{ fontWeight: 'bold' }}>
+                        {displayMode != null ? String(displayMode).toUpperCase() : '—'}
+                      </span>
+                    ) : item.value != null ? (
                       ['altitude_ahl', 'altitude_agl', 'altitude_asl'].includes(item.key)
                         ? `${item.value} m`
                         : item.value

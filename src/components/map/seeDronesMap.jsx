@@ -9,33 +9,11 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
   const map = useMap();
   const [isHovered, setIsHovered] = useState(false);
   const clickTimeoutRef = useRef(null);
-  
-  // Usar ref para almacenar la posición actual sin causar re-render
-  const positionRef = useRef({
-    lat: drone.latitude,
-    lng: drone.longitude
-  });
+  const lastValidModeRef = useRef(null);
+  const lastValidArmedRef = useRef(null);
 
-  // Actualizar posición del marcador cuando llega telemetría SIN re-crear el marcador
-  useEffect(() => {
-    const rtData = realTimeDrones?.[drone.uid];
-    if (rtData && rtData.lat && rtData.lng) {
-      const newLat = rtData.lat;
-      const newLng = rtData.lng;
-      
-      if (positionRef.current.lat !== newLat || positionRef.current.lng !== newLng) {
-        positionRef.current = { lat: newLat, lng: newLng };
-        
-        // Actualizar posición del marcador existente sin recrearlo
-        if (markerRef.current) {
-          markerRef.current.setLatLng([newLat, newLng]);
-        }
-      }
-    }
-  }, [realTimeDrones, drone.uid]);
-
-  // Datos combinados para el icono
   const rtData = realTimeDrones?.[drone.uid] || {};
+
   const mergedDrone = useMemo(() => ({
     ...drone,
     latitude: rtData.lat ?? drone.latitude,
@@ -43,7 +21,44 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     telemetry: rtData.telemetry ?? drone.telemetry,
   }), [drone, rtData.lat, rtData.lng, rtData.telemetry]);
 
-  // Icono con área de clic agrandada
+  // Actualizar último modo válido (ignorar STABILIZE)
+  const mergedTelemetry = rtData.telemetry ?? drone.telemetry;
+  if (mergedTelemetry?.flight_mode && mergedTelemetry.flight_mode !== 'STABILIZE') {
+    lastValidModeRef.current = mergedTelemetry.flight_mode;
+    lastValidArmedRef.current = mergedTelemetry.armed;
+  }
+  const filteredTelemetry = useMemo(() => {
+    const telemetry = rtData.telemetry ?? drone.telemetry;
+    
+    if (telemetry?.flight_mode && telemetry.flight_mode !== 'STABILIZE') {
+      lastValidModeRef.current = telemetry.flight_mode;
+      lastValidArmedRef.current = telemetry.armed;
+    }
+
+    return {
+      ...telemetry,
+      flight_mode: lastValidModeRef.current,
+      armed: lastValidArmedRef.current,
+    };
+  }, [rtData.telemetry, drone.telemetry]);
+
+  const positionRef = useRef({
+    lat: drone.latitude,
+    lng: drone.longitude
+  });
+
+  useEffect(() => {
+    const rt = realTimeDrones?.[drone.uid];
+    if (rt && rt.lat && rt.lng) {
+      if (positionRef.current.lat !== rt.lat || positionRef.current.lng !== rt.lng) {
+        positionRef.current = { lat: rt.lat, lng: rt.lng };
+        if (markerRef.current) {
+          markerRef.current.setLatLng([rt.lat, rt.lng]);
+        }
+      }
+    }
+  }, [realTimeDrones, drone.uid]);
+
   const droneDivIcon = useMemo(() => {
     const iconHtml = ReactDOMServer.renderToString(
       <DroneIcon
@@ -55,21 +70,20 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
         speechBubbleVisible={mergedDrone.SpeechBubbleDroneIcone}
         color={mergedDrone.color}
         water={mergedDrone.water}
-        telemetry={mergedDrone.telemetry}
+        telemetry={filteredTelemetry}
       />
     );
 
     const busyStyle = isBusy ? 'filter: drop-shadow(0 0 10px red);' : '';
     const hoverStyle = isHovered ? 'filter: drop-shadow(0 0 15px yellow); transform: scale(1.05);' : '';
 
-    // 👇 IMPORTANTE: Agrandar el área de clic con un div transparente más grande
     return L.divIcon({
       html: `<div style="position: relative; cursor: pointer;">
         <div style="${busyStyle} ${hoverStyle} transition: all 0.1s ease;">${iconHtml}</div>
         <div style="position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px; background: transparent; z-index: 10;"></div>
       </div>`,
       className: 'drone-marker',
-      iconSize: [48, 48],      // Tamaño total del icono
+      iconSize: [48, 48],
       iconAnchor: [24, 24],
     });
   }, [
@@ -82,11 +96,12 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     mergedDrone.color,
     mergedDrone.SpeechBubbleDroneIcone,
     mergedDrone.water,
+    filteredTelemetry.flight_mode,  // ← solo el campo, no el objeto entero
+    filteredTelemetry.armed, 
     isBusy,
     isHovered,
   ]);
 
-  // Actualizar el icono cuando cambie el estado de hover
   useEffect(() => {
     if (markerRef.current) {
       markerRef.current.setIcon(droneDivIcon);
@@ -94,13 +109,8 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
   }, [droneDivIcon]);
 
   const handleClick = useCallback((e) => {
-    // Limpiar timeout anterior si existe
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-    }
-    
-    // Detener propagación de forma más agresiva
-    if (e && e.originalEvent) {
+    if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+    if (e?.originalEvent) {
       e.originalEvent.stopPropagation();
       e.originalEvent.stopImmediatePropagation();
       e.originalEvent.preventDefault();
@@ -109,45 +119,27 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
       L.DomEvent.stopPropagation(e);
       L.DomEvent.preventDefault(e);
     }
-    
-    console.log('🖱️ DroneMarker CLICK - drone:', drone.uid, drone.name);
-    
-    // Usar timeout para evitar dobles clics
     clickTimeoutRef.current = setTimeout(() => {
-      if (onDroneClick) {
-        onDroneClick(drone);
-      }
-      if (onSelectDrone) {
-        onSelectDrone(drone);
-      }
+      if (onDroneClick) onDroneClick(drone);
+      if (onSelectDrone) onSelectDrone(drone);
     }, 50);
   }, [drone, onDroneClick, onSelectDrone]);
 
   const handleMouseOver = useCallback(() => {
     setIsHovered(true);
-    // Aumentar zIndex temporalmente
     if (markerRef.current) {
       markerRef.current.bringToFront();
-      // Cambiar el cursor a pointer más explícitamente
       const element = markerRef.current.getElement();
-      if (element) {
-        element.style.cursor = 'pointer';
-      }
+      if (element) element.style.cursor = 'pointer';
     }
   }, []);
 
-  const handleMouseOut = useCallback(() => {
-    setIsHovered(false);
-  }, []);
-
-  // Posición inicial del marcador
-  const initialPosition = [positionRef.current.lat, positionRef.current.lng];
+  const handleMouseOut = useCallback(() => setIsHovered(false), []);
 
   return (
     <Marker
       ref={markerRef}
-      key={`drone-${drone.uid}`}
-      position={initialPosition}
+      position={[positionRef.current.lat, positionRef.current.lng]}
       icon={droneDivIcon}
       zIndexOffset={isHovered ? 3000 : 1000}
       riseOnHover={true}
