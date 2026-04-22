@@ -137,7 +137,6 @@ function App() {
     setSelectedControlDrone(drone);
     setControlWaypoints([]);
     setSelectedDrone(null);
-    setSelectedActionDrone(null);
     setIsFloatingDronesVisible(false);
     if (addFireMode) {
       setAddFireMode(false);

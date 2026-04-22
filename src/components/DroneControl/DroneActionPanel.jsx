@@ -20,17 +20,6 @@ export default function DroneActionPanel({
   const [loading, setLoading] = useState(null);
   const panelRef = useRef(null);
 
-  // Cerrar al hacer clic fuera
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (panelRef.current && !panelRef.current.contains(event.target)) {
-        onClose();
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [onClose]);
-
   // Función con confirmación para acciones peligrosas
   const handleActionWithConfirm = (action, callback, confirmMessage) => {
     if (window.confirm(confirmMessage)) {

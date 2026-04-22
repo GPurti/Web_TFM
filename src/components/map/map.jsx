@@ -141,7 +141,7 @@ function FenceLayer({ fences, map }) {
           weight: 3,
           opacity: 0.8,
           fillColor: '#ff4444',
-          fillOpacity: 0.25,
+          fillOpacity: 0,
           dashArray: '5, 10'
         }).addTo(map);
 
