@@ -150,18 +150,22 @@ function App() {
     setControlWaypoints([]);
   }, []);
 
-  // 👇 NUEVO: Función para activar una ruta después de enviarla
   const handleRouteActivated = useCallback((droneUid, waypoints) => {
-    //console.log('🛤️ Ruta activa para', droneUid, 'con', waypoints.length, 'waypoints');
+    const droneData = realTimeDrones[droneUid];
+    const startPosition = droneData 
+      ? { lat: droneData.lat, lng: droneData.lng }
+      : null;
+
     setActiveRoutes(prev => ({
       ...prev,
       [droneUid]: {
         waypoints,
+        startPosition,
         startTime: Date.now(),
         type: 'control_route'
       }
     }));
-  }, []);
+  }, [realTimeDrones]);
 
   // 👇 NUEVO: Función para limpiar una ruta activa
   const handleClearRoute = useCallback((droneUid) => {

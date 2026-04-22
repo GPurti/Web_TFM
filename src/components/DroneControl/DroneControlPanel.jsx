@@ -258,7 +258,6 @@ export default function DroneControlPanel({
         </div>
       )}
 
-      {/* Tabla para FENCE */}
       {missionType === 'fence' && editableWaypoints.length > 0 && (
         <div className="waypoints-table-container">
           <h4>Fence Vertices (min 3):</h4>
@@ -271,8 +270,13 @@ export default function DroneControlPanel({
             </tbody>
           </table>
           <div className="altitude-info">
-            🚧 El drone se mantendrá dentro de esta zona. Si intenta salir, hará RTL (Return to Launch)
+            🚧 El drone se mantendrá dentro de esta zona. Si intenta salir, hará RTL.
           </div>
+          {editableWaypoints.length > 12 && (
+            <div style={{ color: '#ff4444', fontSize: '12px', marginTop: '4px' }}>
+              ⚠️ ArduCopter limit: max 16 total vertices across all fences
+            </div>
+          )}
         </div>
       )}
 
@@ -294,6 +298,11 @@ export default function DroneControlPanel({
           <div className="altitude-info">
             🚫 El drone no podrá entrar en esta zona. Si intenta hacerlo, hará RTL.
           </div>
+          {editableWaypoints.length > 12 && (
+            <div style={{ color: '#ff4444', fontSize: '12px', marginTop: '4px' }}>
+              ⚠️ ArduCopter limit: max 16 total vertices across all fences
+            </div>
+          )}
         </div>
       )}
 

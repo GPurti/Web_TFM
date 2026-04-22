@@ -14,13 +14,12 @@ import ControlWaypoints from "../DroneControl/ControlWaypoints";
 import RoutePreview from "../DroneControl/RoutePreview";
 
 // Componente para mostrar rutas activas (persistentes) - AZUL
-function ActiveRoutesLayer({ activeRoutes, dronesLocations, map }) {
+function ActiveRoutesLayer({ activeRoutes, map }) {  // ← quita dronesLocations, ya no se necesita
   const layersRef = useRef({});
 
   useEffect(() => {
     if (!map) return;
 
-    // Limpiar capas anteriores
     Object.values(layersRef.current).forEach(layer => {
       if (layer.polyline) map.removeLayer(layer.polyline);
       if (layer.decorator) map.removeLayer(layer.decorator);
@@ -28,25 +27,21 @@ function ActiveRoutesLayer({ activeRoutes, dronesLocations, map }) {
     });
     layersRef.current = {};
 
-    // Dibujar cada ruta activa
     Object.entries(activeRoutes).forEach(([droneUid, route]) => {
-      const { waypoints } = route;
+      const { waypoints, startPosition } = route;
       if (!waypoints || waypoints.length === 0) return;
 
-      // Obtener ubicación actual del drone (si está disponible)
-      const droneLocation = dronesLocations[droneUid];
-      
       const allPoints = [];
-      //if (droneLocation && droneLocation.lat && droneLocation.lng) {
-      //  allPoints.push([droneLocation.lat, droneLocation.lng]);
-      //}
+      // ← usar posición fija del momento de envío
+      if (startPosition?.lat && startPosition?.lng) {
+        allPoints.push([startPosition.lat, startPosition.lng]);
+      }
       waypoints.forEach(wp => {
         allPoints.push([wp.lat, wp.lng]);
       });
 
       if (allPoints.length < 2) return;
 
-      // 👈 COLOR AZUL para rutas de control (diferente a fuegos rojos)
       const polyline = L.polyline(allPoints, {
         color: '#3399ff',
         weight: 4,
@@ -71,8 +66,31 @@ function ActiveRoutesLayer({ activeRoutes, dronesLocations, map }) {
         }],
       }).addTo(map);
 
-      // Marcadores azules para waypoints
+      // Marcador especial para el punto de inicio (launch)
       const markers = [];
+      if (startPosition?.lat && startPosition?.lng) {
+        const launchMarker = L.marker([startPosition.lat, startPosition.lng], {
+          icon: L.divIcon({
+            html: `<div style="
+              background-color: #3399ff;
+              width: 22px;
+              height: 22px;
+              border-radius: 50%;
+              border: 2px solid white;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 12px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            ">🏠</div>`,
+            className: '',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11]
+          })
+        }).addTo(map);
+        markers.push(launchMarker);
+      }
+
       waypoints.forEach((wp, index) => {
         const marker = L.marker([wp.lat, wp.lng], {
           icon: L.divIcon({
@@ -108,7 +126,7 @@ function ActiveRoutesLayer({ activeRoutes, dronesLocations, map }) {
         if (layer.markers) layer.markers.forEach(m => map.removeLayer(m));
       });
     };
-  }, [activeRoutes, dronesLocations, map]);
+  }, [activeRoutes, map]);  // ← quita dronesLocations de las dependencias
 
   return null;
 }
@@ -1170,7 +1188,6 @@ export default function Map({
         {Object.keys(activeRoutes).length > 0 && (
           <ActiveRoutesLayer
             activeRoutes={activeRoutes}
-            dronesLocations={realTimeDrones}
             map={mapInstance}
           />
         )}
