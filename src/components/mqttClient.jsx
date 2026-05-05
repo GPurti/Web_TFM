@@ -170,6 +170,11 @@ export default function MqttClient({
         const payload = JSON.parse(message.toString());
         //console.log(`[${msgId}] 📦 Payload:`, payload);
 
+        const receiveTime = Date.now() / 1000; 
+        if (payload.system_time) {
+          const latency = receiveTime - payload.system_time;
+          console.log(`Latència: ${(latency * 1000).toFixed(0)} ms`);
+        }
         // Detección de incendios
         if (topic === 'fire_detection' && payload.coordinates) {
           //console.log(`[${msgId}] 🔥 Fire detection`);

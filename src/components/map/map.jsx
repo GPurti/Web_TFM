@@ -313,6 +313,7 @@ export default function Map({
   addFireMode = false,
   onRouteActivated = () => {},
   onFenceActivated = () => {}, 
+  onClearFence = () => {},
   activeRoutes = {},  
   activeFences = {}, 
   onDroneClick = () => {}
@@ -395,6 +396,36 @@ export default function Map({
     }
   }, [localSelectedControlDrone, realTimeDrones]);
 
+  useEffect(() => {
+    const loadSavedFences = async () => {
+      const { data: savedFences, error } = await supabase
+        .from('drone_fences')
+        .select('*');
+
+      if (error || !savedFences) return;
+
+      // Cargar fences de inclusión
+      savedFences
+        .filter(f => f.fence_type === 'inclusion')
+        .forEach(f => {
+          if (onFenceActivated) {
+            onFenceActivated(f.drone_uid, f.vertices);
+          }
+        });
+
+      // Cargar fences de exclusión
+      const exclusionZones = savedFences
+        .filter(f => f.fence_type === 'exclusion')
+        .map(f => f.vertices);
+
+      if (exclusionZones.length > 0) {
+        setLocalExclusionFences(exclusionZones);
+      }
+    };
+
+    loadSavedFences();
+  }, []); // solo al montar
+
   const tileLayers = {
     standard: {
       name: "OpenStreetMap",
@@ -476,6 +507,8 @@ export default function Map({
       return;
     }
 
+    const droneUid = localSelectedControlDrone.uid;
+
     const mqttMessage = {
       action: 'FENCE',
       vertices: vertices.map(v => ({
@@ -489,7 +522,7 @@ export default function Map({
     const topic = `${localSelectedControlDrone.uid}_action`;
     
     return new Promise((resolve, reject) => {
-      mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, (err) => {
+      mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, async (err) => {
         if (err) {
           console.error('Error enviando fence:', err);
           reject(err);
@@ -500,7 +533,20 @@ export default function Map({
           if (onFenceActivated) {
             onFenceActivated(localSelectedControlDrone.uid, vertices);
           }
-          
+
+          await supabase.from('drone_fences')
+            .delete()
+            .eq('drone_uid', droneUid)
+            .eq('fence_type', 'inclusion');
+
+          const { error } = await supabase.from('drone_fences').insert([{
+            drone_uid: droneUid,
+            fence_type: 'inclusion',
+            vertices: vertices
+          }]);
+          if (error) console.error('❌ Error insertando fence:', error);
+          else console.log('✅ Fence insertada correctamente');
+
           console.log('🎮 Cerrando modo control - volviendo a vista normal');
           setLocalControlMode(false);
           setLocalSelectedControlDrone(null);
@@ -522,17 +568,35 @@ export default function Map({
       alert('Error: No hay conexión MQTT');
       return;
     }
+
+    const droneUid = localSelectedControlDrone.uid; // ← guarda antes del publish
+
     const mqttMessage = {
       action: 'EXCLUSION_FENCE',
       vertices: zones.map(zone => zone.map(v => ({ lat: v.lat, lon: v.lng }))),
       action_on_break: 'RTL'
     };
-    const topic = `${localSelectedControlDrone.uid}_action`;
+
+    const topic = `${droneUid}_action`;
+
     return new Promise((resolve, reject) => {
-      mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, (err) => {
+      mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, async (err) => {
         if (err) { reject(err); return; }
+
         console.log(`✅ Exclusion fence enviado`);
         setLocalExclusionFences(prev => [...prev, ...zones]);
+
+        // Guardar cada zona en Supabase
+        for (const zone of zones) {
+          const { error } = await supabase.from('drone_fences').insert([{
+            drone_uid: droneUid,
+            fence_type: 'exclusion',
+            vertices: zone
+          }]);
+          if (error) console.error('❌ Error guardando exclusion fence:', error);
+          else console.log('✅ Exclusion fence guardada en Supabase');
+        }
+
         setLocalControlMode(false);
         setLocalSelectedControlDrone(null);
         setLocalControlWaypoints([]);
@@ -545,12 +609,51 @@ export default function Map({
 
   const handleClearAllFences = async () => {
     if (!mqttClient || !localSelectedControlDrone) return;
-    const mqttMessage = { action: 'CLEAR_EXCLUSION_FENCES' };  // ← nombre nuevo
-    const topic = `${localSelectedControlDrone.uid}_action`;
-    mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, (err) => {
+    
+    const droneUid = localSelectedControlDrone.uid; // ← guarda antes
+    
+    const mqttMessage = { action: 'CLEAR_EXCLUSION_FENCES' };
+    const topic = `${droneUid}_action`;
+    
+    mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, async (err) => {
       if (!err) {
         console.log('✅ Exclusion fences borradas');
         setLocalExclusionFences([]);
+
+        // Borrar en Supabase
+        const { error } = await supabase.from('drone_fences')
+          .delete()
+          .eq('drone_uid', droneUid)
+          .eq('fence_type', 'exclusion');
+
+        if (error) console.error('❌ Error borrando fences:', error);
+        else console.log('✅ Fences borradas de Supabase');
+      }
+    });
+  };
+
+  const handleClearInclusionFence = async () => {
+    if (!mqttClient || !localSelectedControlDrone) return;
+    const droneUid = localSelectedControlDrone.uid;
+
+    const mqttMessage = { action: 'CLEAR_INCLUSION_FENCE' };
+    const topic = `${droneUid}_action`;
+
+    mqttClient.publish(topic, JSON.stringify(mqttMessage), { qos: 1 }, async (err) => {
+      if (!err) {
+        console.log('✅ Inclusion fence borrada');
+
+        // Borrar visualmente — llamar a prop de App.jsx
+        if (onClearFence) onClearFence(droneUid);
+
+        // Borrar de Supabase
+        const { error } = await supabase.from('drone_fences')
+          .delete()
+          .eq('drone_uid', droneUid)
+          .eq('fence_type', 'inclusion');
+
+        if (error) console.error('❌ Error borrando inclusion fence:', error);
+        else console.log('✅ Inclusion fence borrada de Supabase');
       }
     });
   };
@@ -1226,6 +1329,7 @@ export default function Map({
           onSendFence={handleSendFence}
           onSendExclusionFence={handleSendExclusionFence} 
           onClearAllFences={handleClearAllFences}  
+          onClearInclusionFence={handleClearInclusionFence}
           onPreviewRoute={handlePreviewRoute}
           onIncludeReturnChange={handleIncludeReturnChange}
           waypoints={localControlWaypoints}

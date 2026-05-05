@@ -9,6 +9,7 @@ export default function DroneControlPanel({
   onSendFence,
   onSendExclusionFence,
   onClearAllFences,
+  onClearInclusionFence,
   onPreviewRoute,
   onIncludeReturnChange,
   waypoints = [],
@@ -318,16 +319,17 @@ export default function DroneControlPanel({
 
       <div className="control-actions">
         {missionType === 'exclusion' && (
-          <button 
-            className="clear-fences-button" 
-            onClick={onClearAllFences}
-            style={{ backgroundColor: '#cc0000', color: 'white' }}
-          >
-            🗑️ Clear All Fences
+          <button className="clear-fences-button" onClick={onClearAllFences}>
+            🗑️ Clear Exclusions
+          </button>
+        )}
+        {missionType === 'fence' && (
+          <button className="clear-fences-button" onClick={onClearInclusionFence}>
+            🗑️ Clear Inclusion
           </button>
         )}
         <button className="send-button" onClick={handleSend} disabled={!canSend || isSending}>
-          {isSending ? 'Sending...' : `📡 Send ${missionType === 'fence' ? 'Fence' : 'Mission'}`}
+          {isSending ? 'Sending...' : `📡 Send ${missionType === 'fence' ? 'Fence' : missionType === 'exclusion' ? 'Exclusion' : 'Mission'}`}
         </button>
         <button className="stop-button" onClick={onExitControl}>🛑 Stop</button>
       </div>

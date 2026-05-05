@@ -177,6 +177,14 @@ function App() {
     });
   }, []);
 
+  const handleClearFence = useCallback((droneUid) => {
+  setActiveFences(prev => {
+    const newFences = { ...prev };
+    delete newFences[droneUid];
+    return newFences;
+  });
+}, []);
+
   // 3. FUNCIONES PARA COMANDOS MQTT
   const sendDroneCommand = useCallback((droneUid, command, extraParams = {}) => {
     if (!mqttClient) {
@@ -351,6 +359,7 @@ function App() {
           onRouteActivated={handleRouteActivated}
           onFenceActivated={handleFenceActivated}
           onClearRoute={handleClearRoute}
+          onClearFence={handleClearFence}  
           onSendFence={() => {}}
         />
 
