@@ -8,7 +8,7 @@ import MapStyleMenu from "./mapStyleMenu";
 import SeeDronesMap from "./seeDronesMap";
 import MapOverlays from "./mapOverlays";
 import FireRoute from "../Fire/fireRoute";
-import AeroZonesLayer from "./aeroZonesLayer";
+import AeroZonesLayer from "./AeroZonesLayer";
 import DroneControlPanel from "../DroneControl/DroneControlPanel";
 import ControlWaypoints from "../DroneControl/ControlWaypoints";
 import RoutePreview from "../DroneControl/RoutePreview";
