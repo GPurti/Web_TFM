@@ -90,10 +90,9 @@ export default function DroneActionPanel({
               <span>{loading === 'read' ? '...' : 'Read'}</span>
             </button>
 
-            {/* Write — antes llamado Control */}
             <button className="action-btn control" onClick={() => handleAction('control', onControlMode)} disabled={loading}>
               <span className="material-symbols-outlined">upload</span>
-              <span>{loading === 'control' ? '...' : 'Write'}</span>
+              <span>{loading === 'control' ? '...' : 'Plan'}</span>
             </button>
 
             {/* AUTO */}

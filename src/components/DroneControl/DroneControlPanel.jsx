@@ -193,7 +193,7 @@ export default function DroneControlPanel({
   return (
     <div className="drone-control-panel">
       <div className="control-header">
-        <h3>🎮 Control Mode: {drone?.name || drone?.uid}</h3>
+        <h3>Control Mode: {drone?.name || drone?.uid}</h3>
         <button className="exit-button" onClick={onExitControl}>✖</button>
       </div>
 
@@ -320,18 +320,18 @@ export default function DroneControlPanel({
       <div className="control-actions">
         {missionType === 'exclusion' && (
           <button className="clear-fences-button" onClick={onClearAllFences}>
-            🗑️ Clear Exclusions
+            Clear Exclusions
           </button>
         )}
         {missionType === 'fence' && (
           <button className="clear-fences-button" onClick={onClearInclusionFence}>
-            🗑️ Clear Inclusion
+            Clear Inclusion
           </button>
         )}
-        <button className="send-button" onClick={handleSend} disabled={!canSend || isSending}>
-          {isSending ? 'Sending...' : `📡 Send ${missionType === 'fence' ? 'Fence' : missionType === 'exclusion' ? 'Exclusion' : 'Mission'}`}
-        </button>
-        <button className="stop-button" onClick={onExitControl}>🛑 Stop</button>
+       <button className="send-button" onClick={handleSend} disabled={!canSend || isSending}>
+        {isSending ? 'Sending...' : `Write ${missionType === 'fence' ? 'Fence' : missionType === 'exclusion' ? 'Exclusion' : 'Mission'}`}
+      </button>
+        <button className="stop-button" onClick={onExitControl}>Stop</button>
       </div>
 
       <div className="control-instructions">

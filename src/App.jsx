@@ -330,27 +330,41 @@ function App() {
   const handleReadResponse = useCallback((droneUid, data) => {
     console.log('📦 Procesando read response:', droneUid, data);
 
-    // Mostrar waypoints como ruta activa
     if (data.waypoints && data.waypoints.length > 0) {
+      // El waypoint 0 es el HOME (seq=0, frame global)
+      const homeWp = data.waypoints.find(wp => wp.seq === 0);
+      
+      // Filtrar solo NAV_WAYPOINT (16) y TAKEOFF (22)
       const flightWaypoints = data.waypoints
         .filter(wp => wp.command === 16 || wp.command === 22)
         .map(wp => ({ lat: wp.lat, lng: wp.lng, alt: wp.alt }));
       
       if (flightWaypoints.length > 0) {
-        handleRouteActivated(droneUid, flightWaypoints);
+        // Pasar el home real como startPosition
+        const startPosition = homeWp 
+          ? { lat: homeWp.lat, lng: homeWp.lng }
+          : null;
+
+        setActiveRoutes(prev => ({
+          ...prev,
+          [droneUid]: {
+            waypoints: flightWaypoints,
+            startPosition,  // ← home real del autopiloto
+            startTime: Date.now(),
+            type: 'control_route'
+          }
+        }));
       }
     }
 
-    // Mostrar fence de inclusión
     if (data.inclusion_fence && data.inclusion_fence.length > 0) {
       handleFenceActivated(droneUid, data.inclusion_fence);
     }
 
-    // Mostrar fences de exclusión
     if (data.exclusion_fences && data.exclusion_fences.length > 0) {
       setReadExclusionFences(data.exclusion_fences);
     }
-  }, [handleRouteActivated, handleFenceActivated]);
+  }, [handleFenceActivated]);
 
   // 4. useEffect
   useEffect(() => {
