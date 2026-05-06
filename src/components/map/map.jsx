@@ -423,22 +423,22 @@ export default function Map({
   };
 
   const handleSendRoute = async (fullRoute) => {
-    //console.log('🔍 FULL ROUTE RECIBIDO EN MAP:', JSON.stringify(fullRoute, null, 2));
     if (!mqttClient || !localSelectedControlDrone) {
       console.error('No hay conexión MQTT o drone seleccionado');
       alert('Error: No hay conexión MQTT');
       return;
     }
 
+    // ← CAMBIO: acción UPLOAD_PLAN en lugar de AUTO
     const mqttMessage = {
-      action: 'AUTO',
+      action: 'UPLOAD_PLAN',
       waypoints: fullRoute.map(wp => ({
         lat: wp.lat,
         lon: wp.lng,
         alt: wp.alt || 40
       }))
     };
-    //console.log('📤 MQTT MESSAGE:', JSON.stringify(mqttMessage, null, 2));
+
     const topic = `${localSelectedControlDrone.uid}_action`;
     
     return new Promise((resolve, reject) => {
@@ -447,23 +447,14 @@ export default function Map({
           console.error('Error enviando ruta:', err);
           reject(err);
         } else {
-          //console.log(`✅ Ruta enviada a ${topic} con ${fullRoute.length} waypoints`);
-          
-          // 👇 ACTIVAR RUTA PERSISTENTE (AZUL)
           if (onRouteActivated) {
             onRouteActivated(localSelectedControlDrone.uid, fullRoute);
           }
-          
-          //console.log('🎮 Cerrando modo control - volviendo a vista normal');
           setLocalControlMode(false);
           setLocalSelectedControlDrone(null);
           setLocalControlWaypoints([]);
           setShowRoutePreview(false);
-          
-          if (onExitControlMode) {
-            onExitControlMode();
-          }
-          
+          if (onExitControlMode) onExitControlMode();
           resolve();
         }
       });
