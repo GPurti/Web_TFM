@@ -314,6 +314,7 @@ export default function Map({
   onRouteActivated = () => {},
   onFenceActivated = () => {}, 
   onClearFence = () => {},
+  readExclusionFences = [],
   activeRoutes = {},  
   activeFences = {}, 
   onDroneClick = () => {}
@@ -395,36 +396,6 @@ export default function Map({
       }
     }
   }, [localSelectedControlDrone, realTimeDrones]);
-
-  useEffect(() => {
-    const loadSavedFences = async () => {
-      const { data: savedFences, error } = await supabase
-        .from('drone_fences')
-        .select('*');
-
-      if (error || !savedFences) return;
-
-      // Cargar fences de inclusión
-      savedFences
-        .filter(f => f.fence_type === 'inclusion')
-        .forEach(f => {
-          if (onFenceActivated) {
-            onFenceActivated(f.drone_uid, f.vertices);
-          }
-        });
-
-      // Cargar fences de exclusión
-      const exclusionZones = savedFences
-        .filter(f => f.fence_type === 'exclusion')
-        .map(f => f.vertices);
-
-      if (exclusionZones.length > 0) {
-        setLocalExclusionFences(exclusionZones);
-      }
-    };
-
-    loadSavedFences();
-  }, []); // solo al montar
 
   const tileLayers = {
     standard: {
@@ -1303,7 +1274,7 @@ export default function Map({
         )}
 
         <ExclusionFenceLayer
-          exclusionFences={localExclusionFences}
+          exclusionFences={[...localExclusionFences, ...readExclusionFences]}
           map={mapInstance}
         />
 

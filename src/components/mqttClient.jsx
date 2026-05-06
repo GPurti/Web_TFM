@@ -8,6 +8,7 @@ export default function MqttClient({
   onFireDetection,
   onMissionComplete,
   onNewDroneDetected,
+  onReadResponse,
 }) {
   const knownUidsRef = useRef([]);
   const onDroneUpdateRef = useRef(onDroneUpdate);
@@ -21,6 +22,11 @@ export default function MqttClient({
   const registeredDronesRef = useRef(new Set());
   const pendingRegistrationRef = useRef(new Set());
   const messageCounterRef = useRef(0);
+
+  const onReadResponseRef = useRef(onReadResponse);
+  useEffect(() => {
+    onReadResponseRef.current = onReadResponse;
+  }, [onReadResponse]);
 
   useEffect(() => {
     onDroneUpdateRef.current = onDroneUpdate;
@@ -227,6 +233,13 @@ export default function MqttClient({
           if (status === 'completed' || status === 'success') {
             onMissionCompleteRef.current?.(droneUid, fireId);
           }
+        }
+
+        if (topic.endsWith('_read_response')) {
+          const droneUid = topic.replace('_read_response', '');
+          console.log('📦 Read response recibida para:', droneUid, payload);
+          onReadResponseRef.current?.(droneUid, payload);
+          return;
         }
 
       } catch (err) {

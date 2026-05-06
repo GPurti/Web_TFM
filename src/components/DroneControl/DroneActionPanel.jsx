@@ -7,6 +7,9 @@ export default function DroneActionPanel({
   onClose, 
   onEdit,
   onControlMode,
+  onRead,        // ← nuevo
+  onAuto,        // ← nuevo
+  onPosHold, 
   onArm,
   onDisarm,
   onTakeoff,
@@ -75,56 +78,50 @@ export default function DroneActionPanel({
             </div>
           </div>
 
-          {/* Botones de acciones - 3 columnas en modo expandido */}
           <div className="actions-grid">
             <button className="action-btn edit" onClick={() => handleAction('edit', onEdit)} disabled={loading}>
               <span className="material-symbols-outlined">edit</span>
-              <span>Editar</span>
+              <span>Edit</span>
             </button>
-            
+
+            {/* Read — lee plan y fences activos */}
+            <button className="action-btn read" onClick={() => handleAction('read', onRead)} disabled={loading}>
+              <span className="material-symbols-outlined">download</span>
+              <span>{loading === 'read' ? '...' : 'Read'}</span>
+            </button>
+
+            {/* Write — antes llamado Control */}
             <button className="action-btn control" onClick={() => handleAction('control', onControlMode)} disabled={loading}>
-              <span className="material-symbols-outlined">flight_takeoff</span>
-              <span>Control</span>
+              <span className="material-symbols-outlined">upload</span>
+              <span>{loading === 'control' ? '...' : 'Write'}</span>
             </button>
-            
-            {/* 👇 ARM CON CONFIRMACIÓN */}
-            <button 
-              className="action-btn arm" 
-              onClick={() => handleActionWithConfirm(
-                'arm', 
-                onArm, 
-                '⚠️ Are you sure you want to ARM the drone?'
-              )} 
-              disabled={loading}
-            >
+
+            {/* AUTO */}
+            <button className="action-btn auto" onClick={() => handleActionWithConfirm(
+              'auto', onAuto, '⚠️ Start AUTO mission?'
+            )} disabled={loading}>
+              <span className="material-symbols-outlined">play_arrow</span>
+              <span>{loading === 'auto' ? '...' : 'AUTO'}</span>
+            </button>
+
+            {/* PosHold */}
+            <button className="action-btn poshold" onClick={() => handleAction('poshold', onPosHold)} disabled={loading}>
+              <span className="material-symbols-outlined">my_location</span>
+              <span>{loading === 'poshold' ? '...' : 'PosHold'}</span>
+            </button>
+
+            {/* resto de botones igual */}
+            <button className="action-btn arm" onClick={() => handleActionWithConfirm('arm', onArm, '⚠️ Are you sure you want to ARM the drone?')} disabled={loading}>
               <span className="material-symbols-outlined">power</span>
               <span>{loading === 'arm' ? '...' : 'Arm'}</span>
             </button>
             
-            {/* 👇 DISARM CON CONFIRMACIÓN */}
-            <button 
-              className="action-btn disarm" 
-              onClick={() => handleActionWithConfirm(
-                'disarm', 
-                onDisarm, 
-                '⚠️ Are you sure you want to DISARM the drone?'
-              )} 
-              disabled={loading}
-            >
+            <button className="action-btn disarm" onClick={() => handleActionWithConfirm('disarm', onDisarm, '⚠️ Are you sure you want to DISARM the drone?')} disabled={loading}>
               <span className="material-symbols-outlined">power_off</span>
               <span>{loading === 'disarm' ? '...' : 'Disarm'}</span>
             </button>
             
-            {/* 👇 TAKEOFF CON CONFIRMACIÓN */}
-            <button 
-              className="action-btn takeoff" 
-              onClick={() => handleActionWithConfirm(
-                'takeoff', 
-                onTakeoff, 
-                '⚠️ Are you sure you want to TAKEOFF? The drone will ascend to 20 meters.'
-              )} 
-              disabled={loading}
-            >
+            <button className="action-btn takeoff" onClick={() => handleActionWithConfirm('takeoff', onTakeoff, '⚠️ Are you sure you want to TAKEOFF? The drone will ascend to 20 meters.')} disabled={loading}>
               <span className="material-symbols-outlined">vertical_align_top</span>
               <span>{loading === 'takeoff' ? '...' : 'Takeoff'}</span>
             </button>
@@ -144,16 +141,7 @@ export default function DroneActionPanel({
               <span>{loading === 'loiter' ? '...' : 'Loiter'}</span>
             </button>
             
-            {/* 👇 EMERGENCY STOP CON CONFIRMACIÓN */}
-            <button 
-              className="action-btn emergency" 
-              onClick={() => handleActionWithConfirm(
-                'emergency', 
-                onEmergencyStop, 
-                '🚨 EMERGENCY STOP! Are you sure? The drone will stop immediately and may crash.'
-              )} 
-              disabled={loading}
-            >
+            <button className="action-btn emergency" onClick={() => handleActionWithConfirm('emergency', onEmergencyStop, '🚨 EMERGENCY STOP! Are you sure?')} disabled={loading}>
               <span className="material-symbols-outlined">emergency</span>
               <span>{loading === 'emergency' ? '...' : 'Emergency'}</span>
             </button>

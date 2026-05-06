@@ -27,8 +27,7 @@ function App() {
   const [addFireMode, setAddFireMode] = useState(false);
   const [selectedActionDrone, setSelectedActionDrone] = useState(null);
   const [activeFences, setActiveFences] = useState({});
-  
-  // 👇 NUEVO: Estado para rutas activas (múltiples drones)
+  const [readExclusionFences, setReadExclusionFences] = useState([]);
   const [activeRoutes, setActiveRoutes] = useState({}); // { [droneUid]: { waypoints, startTime, type } }
 
   // 2. FUNCIONES QUE NO DEPENDEN DE OTRAS FUNCIONES
@@ -233,6 +232,12 @@ function App() {
           waypoints: extraParams.waypoints || [] 
         };
         break;
+      case 'AUTO_RESUME':
+        message = { action: 'AUTO_RESUME' };
+        break;
+      case 'POSHOLD':
+        message = { action: 'POSHOLD' };
+        break;
       default:
         message = { action: command, ...extraParams };
     }
@@ -292,6 +297,61 @@ function App() {
     setSelectedActionDrone(drone);
   }, []);
 
+  const handleAuto = useCallback(() => {
+    if (!selectedActionDrone) return;
+    sendDroneCommand(selectedActionDrone.uid, 'AUTO_RESUME'); // reanudar misión AUTO
+  }, [selectedActionDrone, sendDroneCommand]);
+
+  const handlePosHold = useCallback(() => {
+    if (!selectedActionDrone) return;
+    sendDroneCommand(selectedActionDrone.uid, 'POSHOLD');
+  }, [selectedActionDrone, sendDroneCommand]);
+
+  const handleRead = useCallback((droneUid) => {
+    if (!mqttClient) return;
+    
+    console.log('📖 Solicitando lectura para:', droneUid);
+    
+    // Suscribirse al topic de respuesta
+    const responseTopic = `${droneUid}_read_response`;
+    
+    mqttClient.subscribe(responseTopic, { qos: 1 });
+    
+    // Enviar comando READ
+    const message = JSON.stringify({ 
+      action: 'READ',
+      drone_uid: droneUid
+    });
+    mqttClient.publish(`${droneUid}_action`, message, { qos: 1 });
+    
+    console.log('📡 Comando READ enviado, esperando respuesta...');
+  }, [mqttClient]);
+
+  const handleReadResponse = useCallback((droneUid, data) => {
+    console.log('📦 Procesando read response:', droneUid, data);
+
+    // Mostrar waypoints como ruta activa
+    if (data.waypoints && data.waypoints.length > 0) {
+      const flightWaypoints = data.waypoints
+        .filter(wp => wp.command === 16 || wp.command === 22)
+        .map(wp => ({ lat: wp.lat, lng: wp.lng, alt: wp.alt }));
+      
+      if (flightWaypoints.length > 0) {
+        handleRouteActivated(droneUid, flightWaypoints);
+      }
+    }
+
+    // Mostrar fence de inclusión
+    if (data.inclusion_fence && data.inclusion_fence.length > 0) {
+      handleFenceActivated(droneUid, data.inclusion_fence);
+    }
+
+    // Mostrar fences de exclusión
+    if (data.exclusion_fences && data.exclusion_fences.length > 0) {
+      setReadExclusionFences(data.exclusion_fences);
+    }
+  }, [handleRouteActivated, handleFenceActivated]);
+
   // 4. useEffect
   useEffect(() => {
     const initSession = async () => {
@@ -322,6 +382,7 @@ function App() {
         onClientReady={handleClientReady}
         onDroneUpdate={handleDroneUpdate}
         onNewDroneDetected={handleNewDroneDetected}
+        onReadResponse={handleReadResponse}
       />
 
       <div className="lateralMenu" style={{ display: controlMode ? 'none' : 'block' }}>
@@ -361,6 +422,7 @@ function App() {
           onClearRoute={handleClearRoute}
           onClearFence={handleClearFence}  
           onSendFence={() => {}}
+          readExclusionFences={readExclusionFences} 
         />
 
         {isFloatingDronesVisible && !controlMode && (
@@ -396,6 +458,10 @@ function App() {
           onRTL={handleRTL}
           onLoiter={handleLoiter}
           onEmergencyStop={handleEmergencyStop}
+          onRead={handleRead}
+          onAuto={handleAuto}
+          onPosHold={handlePosHold}
+          onRead={() => handleRead(selectedActionDrone.uid)}
           isConnected={true}
         />
       )}
