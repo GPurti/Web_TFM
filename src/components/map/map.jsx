@@ -435,7 +435,8 @@ export default function Map({
       waypoints: fullRoute.map(wp => ({
         lat: wp.lat,
         lon: wp.lng,
-        alt: wp.alt || 40
+        alt: wp.alt || 40,
+        frame: wp.frame || 'relative'
       }))
     };
 
@@ -477,7 +478,7 @@ export default function Map({
         lat: v.lat,
         lon: v.lng
       })),
-      action_on_break: 'RTL'
+      action_on_break: 'NONE'
     };
     
     console.log('📤 MQTT FENCE MESSAGE:', JSON.stringify(mqttMessage, null, 2));

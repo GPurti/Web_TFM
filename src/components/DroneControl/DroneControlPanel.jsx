@@ -36,6 +36,7 @@ export default function DroneControlPanel({
         return {
           ...wp,
           alt: existing?.alt || wp.alt || 40,
+          frame: existing?.frame || wp.frame || 'relative',
           order: index + 1
         };
       });
@@ -49,8 +50,14 @@ export default function DroneControlPanel({
     
     setEditableWaypoints(prev =>
       prev.map(wp =>
-        wp.id === id ? { ...wp, alt: Math.min(Math.max(altValue, 10), 500) } : wp
+        wp.id === id ? { ...wp, alt: Math.min(Math.max(altValue, 0), 999) } : wp
       )
+    );
+  };
+
+  const updateWaypointFrame = (id, newFrame) => {
+    setEditableWaypoints(prev =>
+      prev.map(wp => wp.id === id ? { ...wp, frame: newFrame } : wp)
     );
   };
 
@@ -58,7 +65,8 @@ export default function DroneControlPanel({
     const waypointsToSend = editableWaypoints.map(wp => ({
       lat: wp.lat,
       lng: wp.lng,
-      alt: wp.alt
+      alt: wp.alt,
+      frame: wp.frame || 'relative' 
     }));
     
     if (!includeReturn || !homeLocation || waypointsToSend.length === 0) {
@@ -240,7 +248,7 @@ export default function DroneControlPanel({
           <h4>Waypoints (click altitude to edit):</h4>
           <table className="waypoints-table">
             <thead>
-              <tr><th>#</th><th>Latitude</th><th>Longitude</th><th>Altitude (m)</th></tr>
+              <tr><th>#</th><th>Latitude</th><th>Longitude</th><th>Altitude (m)</th><th>Frame</th></tr>
             </thead>
             <tbody>
               {editableWaypoints.map((wp) => (
@@ -249,8 +257,31 @@ export default function DroneControlPanel({
                   <td className="coord-cell">{wp.lat.toFixed(6)}</td>
                   <td className="coord-cell">{wp.lng.toFixed(6)}</td>
                   <td className="alt-cell">
-                    <input type="number" className="alt-input" value={wp.alt} onChange={(e) => updateWaypointAltitude(wp.id, e.target.value)} min="10" max="500" step="5"/>
+                    <input type="number" className="alt-input" value={wp.alt === 0 ? '' : wp.alt} onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || val === '-') {
+                        setEditableWaypoints(prev => prev.map(w => w.id === wp.id ? { ...w, alt: '' } : w));
+                        return;
+                      }
+                      updateWaypointAltitude(wp.id, val);
+                    }} onBlur={(e) => {
+                      if (e.target.value === '' || e.target.value === '0') {
+                        updateWaypointAltitude(wp.id, 20);
+                      }
+                    }} min="0" max="999" step="5"/>
                     <span className="alt-unit">m</span>
+                  </td>
+                  <td>
+                    <select
+                      className="alt-input"
+                      value={wp.frame || 'relative'}
+                      onChange={(e) => updateWaypointFrame(wp.id, e.target.value)}
+                      style={{ width: '90px', padding: '4px' }}
+                    >
+                      <option value="relative">Relative</option>
+                      <option value="absolute">Absolute</option>
+                      <option value="terrain">Terrain</option>
+                    </select>
                   </td>
                 </tr>
               ))}

@@ -21,20 +21,12 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     telemetry: rtData.telemetry ?? drone.telemetry,
   }), [drone, rtData.lat, rtData.lng, rtData.telemetry]);
 
-  // Actualizar último modo válido (ignorar STABILIZE)
-  const mergedTelemetry = rtData.telemetry ?? drone.telemetry;
-  if (mergedTelemetry?.flight_mode && mergedTelemetry.flight_mode !== 'STABILIZE') {
-    lastValidModeRef.current = mergedTelemetry.flight_mode;
-    lastValidArmedRef.current = mergedTelemetry.armed;
-  }
   const filteredTelemetry = useMemo(() => {
     const telemetry = rtData.telemetry ?? drone.telemetry;
-    
     if (telemetry?.flight_mode && telemetry.flight_mode !== 'STABILIZE') {
       lastValidModeRef.current = telemetry.flight_mode;
       lastValidArmedRef.current = telemetry.armed;
     }
-
     return {
       ...telemetry,
       flight_mode: lastValidModeRef.current,
@@ -42,10 +34,7 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     };
   }, [rtData.telemetry, drone.telemetry]);
 
-  const positionRef = useRef({
-    lat: drone.latitude,
-    lng: drone.longitude
-  });
+  const positionRef = useRef({ lat: drone.latitude, lng: drone.longitude });
 
   useEffect(() => {
     const rt = realTimeDrones?.[drone.uid];
@@ -59,17 +48,48 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     }
   }, [realTimeDrones, drone.uid]);
 
+  // ← NOU: actualitza NOMÉS la bombolla de telemetria sense recrear el marcador
+  useEffect(() => {
+    if (!markerRef.current || !drone.SpeechBubbleDroneIcone) return;
+    const element = markerRef.current.getElement();
+    if (!element) return;
+
+    const bubble = element.querySelector('.droneInfoTab');
+    if (!bubble) return;
+
+    const newHtml = ReactDOMServer.renderToString(
+      <DroneIcon
+        name={drone.name}
+        latitude={rtData.lat ?? drone.latitude}
+        longitude={rtData.lng ?? drone.longitude}
+        altitude={filteredTelemetry?.altitude_asl || 0}
+        heading={filteredTelemetry?.heading || 0}
+        speechBubbleVisible={true}
+        color={drone.color}
+        water={drone.water}
+        telemetry={filteredTelemetry}
+      />
+    );
+    const temp = document.createElement('div');
+    temp.innerHTML = newHtml;
+    const newBubble = temp.querySelector('.droneInfoTab');
+    if (newBubble) {
+      bubble.innerHTML = newBubble.innerHTML;
+    }
+  }, [filteredTelemetry]); // ← només quan canvia la telemetria
+
+  // ← icona base: només es recrea quan canvien propietats estructurals
   const droneDivIcon = useMemo(() => {
     const iconHtml = ReactDOMServer.renderToString(
       <DroneIcon
-        name={mergedDrone.name}
-        latitude={mergedDrone.latitude}
-        longitude={mergedDrone.longitude}
-        altitude={mergedDrone.telemetry?.altitude_asl || mergedDrone.telemetry?.altitude || 0}
-        heading={mergedDrone.telemetry?.heading || 0}
-        speechBubbleVisible={mergedDrone.SpeechBubbleDroneIcone}
-        color={mergedDrone.color}
-        water={mergedDrone.water}
+        name={drone.name}
+        latitude={drone.latitude}
+        longitude={drone.longitude}
+        altitude={0}
+        heading={0}
+        speechBubbleVisible={drone.SpeechBubbleDroneIcone}
+        color={drone.color}
+        water={drone.water}
         telemetry={filteredTelemetry}
       />
     );
@@ -87,19 +107,14 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
       iconAnchor: [24, 24],
     });
   }, [
-    mergedDrone.name,
-    mergedDrone.latitude,
-    mergedDrone.longitude,
-    mergedDrone.telemetry?.altitude_asl,
-    mergedDrone.telemetry?.altitude,
-    mergedDrone.telemetry?.heading,
-    mergedDrone.color,
-    mergedDrone.SpeechBubbleDroneIcone,
-    mergedDrone.water,
-    filteredTelemetry.flight_mode,  // ← solo el campo, no el objeto entero
-    filteredTelemetry.armed, 
+    drone.uid,
+    drone.name,
+    drone.color,
+    drone.SpeechBubbleDroneIcone,
+    drone.water,
     isBusy,
     isHovered,
+    // ← sense filteredTelemetry aquí
   ]);
 
   useEffect(() => {
@@ -156,12 +171,11 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
 }
 
 export default function SeeDronesMap({ drones, realTimeDrones, onSelectDrone, onDroneClick, busyDrones = {} }) {
-  // Filtrar solo drones visibles y con coordenadas válidas
-  const visibleDrones = useMemo(() => 
+  const visibleDrones = useMemo(() =>
     drones.filter(d => d.show && d.latitude && d.longitude),
     [drones]
   );
-  
+
   return (
     <>
       {visibleDrones.map((d) => (
