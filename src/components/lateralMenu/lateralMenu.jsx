@@ -78,27 +78,24 @@ export default function LateralMenu({
         </li>
 
         {/* DRONES */}
-        <li
-          className="sidebarElement"
-          onClick={handleToggleDrones}
-        >
+        <li className="sidebarElement" onClick={handleToggleDrones}>
           <span className="material-symbols-outlined sidebarIcon">
             connecting_airports
           </span>
           <div className="sidebarHide">
             <span className="sidebarText">UAS</span>
           </div>
-
-          <div className={`sidebarList ${isDroneListVisible ? "show" : ""} ${closingDroneList ? "closing" : ""}`}>
-            <div className="resizableList" onClick={(e) => e.stopPropagation()}>
-              <DroneList
-                visibleDrones={visibleDrones}
-                onToggleVisibility={handleToggleVisibility}
-                onEditDrone={onEditDrone}
-              />
-            </div>
-          </div>
         </li>
+
+        <div className={`sidebarList ${isDroneListVisible ? "show" : ""} ${closingDroneList ? "closing" : ""}`}>
+          <div className="resizableList" onClick={(e) => e.stopPropagation()}>
+            <DroneList
+              visibleDrones={visibleDrones}
+              onToggleVisibility={handleToggleVisibility}
+              onEditDrone={onEditDrone}
+            />
+          </div>
+        </div>
 
         {/* FIRE */}
         <li className="sidebarElement" onClick={handleToggleFire}>
@@ -108,35 +105,22 @@ export default function LateralMenu({
           <div className="sidebarHide">
             <span className="sidebarText">Fire</span>
           </div>
-
-          <div className={`sidebarList ${isFireVisible ? "show" : ""} ${closingFireList ? "closing" : ""}`}>
-            
-            <div className="resizableList" onClick={(e) => e.stopPropagation()}>
-
-              {/* 🔥 HEADER MISSIONS + BOTÓN */}
-              <div className="missions-header">
-                
-
-                <button 
-                  className={`add-fire-button ${isAddFireModeActive ? 'active' : ''}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onAddFireMode?.();
-                  }}
-                >
-                  <span className="material-symbols-outlined">add_location</span>
-                  {isAddFireModeActive ? 'Accept' : 'Add fire'}
-                </button>
-              </div>
-
-              {/* LISTA DE MISIONES */}
-              <FireMissions 
-                mqttClient={mqttClient} 
-                realTimeDrones={realTimeDrones}
-              />
-            </div>
-          </div>
         </li>
+
+        <div className={`sidebarList ${isFireVisible ? "show" : ""} ${closingFireList ? "closing" : ""}`}>
+          <div className="resizableList" onClick={(e) => e.stopPropagation()}>
+            <div className="missions-header">
+              <button 
+                className={`add-fire-button ${isAddFireModeActive ? 'active' : ''}`}
+                onClick={(e) => { e.stopPropagation(); onAddFireMode?.(); }}
+              >
+                <span className="material-symbols-outlined">add_location</span>
+                {isAddFireModeActive ? 'Accept' : 'Add fire'}
+              </button>
+            </div>
+            <FireMissions mqttClient={mqttClient} realTimeDrones={realTimeDrones}/>
+          </div>
+        </div>
 
         {/* RESTORE DRONES */}
         {!isFloatingDronesVisible && (

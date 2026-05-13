@@ -107,11 +107,11 @@ export default function MqttClient({
       //console.log(`[${callId}] 📦 Insertando nuevo drone...`);
       const newDrone = {
         uid: droneUid,
-        name: telemetryData.name || `Drone ${droneUid.slice(0, 4)}`,
+        name: droneUid,
         latitude: telemetryData.latitude || 0,
         longitude: telemetryData.longitude || 0,
         color: telemetryData.color || '#' + Math.floor(Math.random()*16777215).toString(16),
-        SpeechBubbleDroneIcone: false,
+        SpeechBubbleDroneIcone: true,
         show: true,
         water: telemetryData.water || false,
         Status: true,

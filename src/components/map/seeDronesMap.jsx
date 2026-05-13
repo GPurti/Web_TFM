@@ -7,7 +7,6 @@ import { useMemo, useCallback, useRef, useEffect, useState } from 'react';
 function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBusy }) {
   const markerRef = useRef(null);
   const map = useMap();
-  const [isHovered, setIsHovered] = useState(false);
   const clickTimeoutRef = useRef(null);
   const lastValidModeRef = useRef(null);
   const lastValidArmedRef = useRef(null);
@@ -48,12 +47,20 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     }
   }, [realTimeDrones, drone.uid]);
 
-  // ← NOU: actualitza NOMÉS la bombolla de telemetria sense recrear el marcador
   useEffect(() => {
-    if (!markerRef.current || !drone.SpeechBubbleDroneIcone) return;
+  if (!markerRef.current) return;
     const element = markerRef.current.getElement();
     if (!element) return;
 
+    // Actualitzar rotació del drone
+    const orientationDiv = element.querySelector('.droneWithOrientation');
+    if (orientationDiv) {
+      const heading = filteredTelemetry?.heading || 0;
+      orientationDiv.style.transform = `rotate(${heading}deg)`;
+    }
+
+    // Actualitzar bombolla de telemetria
+    if (!drone.SpeechBubbleDroneIcone) return;
     const bubble = element.querySelector('.droneInfoTab');
     if (!bubble) return;
 
@@ -76,7 +83,7 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     if (newBubble) {
       bubble.innerHTML = newBubble.innerHTML;
     }
-  }, [filteredTelemetry]); // ← només quan canvia la telemetria
+  }, [filteredTelemetry]);
 
   // ← icona base: només es recrea quan canvien propietats estructurals
   const droneDivIcon = useMemo(() => {
@@ -95,11 +102,10 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     );
 
     const busyStyle = isBusy ? 'filter: drop-shadow(0 0 10px red);' : '';
-    const hoverStyle = isHovered ? 'filter: drop-shadow(0 0 15px yellow); transform: scale(1.05);' : '';
 
     return L.divIcon({
       html: `<div style="position: relative; cursor: pointer;">
-        <div style="${busyStyle} ${hoverStyle} transition: all 0.1s ease;">${iconHtml}</div>
+        <div style="${busyStyle} transition: all 0.1s ease;">${iconHtml}</div>
         <div style="position: absolute; top: -20px; left: -20px; right: -20px; bottom: -20px; background: transparent; z-index: 10;"></div>
       </div>`,
       className: 'drone-marker',
@@ -113,8 +119,6 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
     drone.SpeechBubbleDroneIcone,
     drone.water,
     isBusy,
-    isHovered,
-    // ← sense filteredTelemetry aquí
   ]);
 
   useEffect(() => {
@@ -141,22 +145,31 @@ function DroneMarker({ drone, realTimeDrones, onSelectDrone, onDroneClick, isBus
   }, [drone, onDroneClick, onSelectDrone]);
 
   const handleMouseOver = useCallback(() => {
-    setIsHovered(true);
     if (markerRef.current) {
-      markerRef.current.bringToFront();
       const element = markerRef.current.getElement();
-      if (element) element.style.cursor = 'pointer';
+      if (element) {
+        element.style.cursor = 'pointer';
+        element.style.filter = 'drop-shadow(0 0 8px rgba(149, 246, 13, 0.8))';
+        element.style.transition = 'filter 0.2s ease';
+      }
     }
   }, []);
 
-  const handleMouseOut = useCallback(() => setIsHovered(false), []);
+  const handleMouseOut = useCallback(() => {
+    if (markerRef.current) {
+      const element = markerRef.current.getElement();
+      if (element) {
+        element.style.filter = isBusy ? 'drop-shadow(0 0 10px red)' : '';
+      }
+    }
+  }, [isBusy]);
 
   return (
     <Marker
       ref={markerRef}
       position={[positionRef.current.lat, positionRef.current.lng]}
       icon={droneDivIcon}
-      zIndexOffset={isHovered ? 3000 : 1000}
+      zIndexOffset={1000}
       riseOnHover={true}
       riseOffset={500}
       interactive={true}

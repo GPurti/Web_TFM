@@ -12,6 +12,8 @@
 }
 .lateralMenu{
   z-index: 1;
+  flex-shrink: 0;  /* ← afegeix */
+  min-width: 60px;
 }
 * {
   margin: 0;
