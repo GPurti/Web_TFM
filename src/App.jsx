@@ -437,6 +437,7 @@ function App() {
           onClearFence={handleClearFence}  
           onSendFence={() => {}}
           readExclusionFences={readExclusionFences} 
+          selectedActionDrone={selectedActionDrone}
         />
 
         {isFloatingDronesVisible && !controlMode && (

@@ -317,7 +317,8 @@ export default function Map({
   readExclusionFences = [],
   activeRoutes = {},  
   activeFences = {}, 
-  onDroneClick = () => {}
+  onDroneClick = () => {},
+  selectedActionDrone = null
 }) {
   const [drones, setDrones] = useState([]);
   const [selectedDrone, setSelectedDrone] = useState(null);
@@ -347,6 +348,7 @@ export default function Map({
   const [previewFullRoute, setPreviewFullRoute] = useState([]);
   const [includeReturn, setIncludeReturn] = useState(true);
   const [localExclusionFences, setLocalExclusionFences] = useState([]); // [[{lat,lng},...], ...]
+  const [contextMenu, setContextMenu] = useState(null); 
 
   // Sincronizar props con estado local
   useEffect(() => {
@@ -1147,6 +1149,19 @@ export default function Map({
     return null;
   }
 
+  function MapContextMenu({ onOpen, onClose }) {
+    useMapEvents({
+      contextmenu: (e) => {
+        if (!selectedActionDrone) return;
+        e.originalEvent.preventDefault();
+        const { x, y } = e.containerPoint;
+        onOpen({ lat: e.latlng.lat, lng: e.latlng.lng, x, y });
+      },
+      click: () => onClose(),
+    });
+    return null;
+  }
+
   return (
     <>
       <MqttClient
@@ -1170,6 +1185,7 @@ export default function Map({
         setShowAero={setShowAero}
         showAero={showAero}
       />
+
       <MapContainer
         center={[41.808905, 2.163105]}
         zoom={18}
@@ -1279,10 +1295,167 @@ export default function Map({
             onDroneClick={onDroneClick}
           />
         )}
-        
-
+        <MapContextMenu
+          onOpen={setContextMenu}
+          onClose={() => setContextMenu(null)}
+          selectedActionDrone={selectedActionDrone}
+        />
 
       </MapContainer>
+
+      {contextMenu && (
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            background: '#1a1d27',
+            border: '1px solid #2a2d3a',
+            borderRadius: '8px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+            zIndex: 9999,
+            minWidth: '180px',
+            overflow: 'hidden',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{
+            padding: '6px 12px',
+            fontSize: '10px',
+            color: '#565a6e',
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            borderBottom: '1px solid #2a2d3a',
+            fontFamily: 'monospace',
+          }}>
+            {contextMenu.lat.toFixed(5)}, {contextMenu.lng.toFixed(5)}
+          </div>
+
+          {contextMenu.showAltInput ? (
+            <div style={{ padding: '12px 14px' }}>
+              <div style={{
+                fontSize: '10px',
+                color: '#4f8ef7',
+                marginBottom: '8px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>flight_takeoff</span>
+                Fly there
+              </div>
+              <div style={{ fontSize: '11px', color: '#8b90a0', marginBottom: '6px' }}>
+                Target altitude
+              </div>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    autoFocus
+                    type="number"
+                    defaultValue={30}
+                    min={1}
+                    max={999}
+                    style={{
+                      width: '100%',
+                      padding: '7px 28px 7px 10px',
+                      background: '#0f1117',
+                      border: '1px solid #353848',
+                      borderRadius: '6px',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontFamily: 'DM Mono, monospace',
+                      outline: 'none',
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#4f8ef7'}
+                    onBlur={(e) => e.target.style.borderColor = '#353848'}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const alt = parseFloat(e.target.value);
+                        if (!isNaN(alt) && alt > 0) {
+                          mqttClient.publish(`${selectedActionDrone.uid}_action`, JSON.stringify({
+                            action: 'GUIDED',
+                            new_lat: contextMenu.lat,
+                            new_lon: contextMenu.lng,
+                            new_alt: alt,
+                          }), { qos: 1 });
+                          setContextMenu(null);
+                        }
+                      }
+                      if (e.key === 'Escape') setContextMenu(null);
+                    }}
+                    id="fly-alt-input"
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    right: '8px',
+                    fontSize: '10px',
+                    color: '#565a6e',
+                    fontFamily: 'DM Mono, monospace',
+                    pointerEvents: 'none'
+                  }}>m</span>
+                </div>
+                <button
+                  style={{
+                    padding: '7px 14px',
+                    background: 'linear-gradient(135deg, #4f8ef7, #3a6fd4)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: 'white',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    fontFamily: 'DM Sans, sans-serif',
+                    letterSpacing: '0.02em',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.filter = 'brightness(1.1)'}
+                  onMouseLeave={(e) => e.currentTarget.style.filter = 'none'}
+                  onClick={() => {
+                    const val = parseFloat(document.getElementById('fly-alt-input').value);
+                    if (!isNaN(val) && val > 0) {
+                      mqttClient.publish(`${selectedActionDrone.uid}_action`, JSON.stringify({
+                        action: 'GUIDED',
+                        new_lat: contextMenu.lat,
+                        new_lon: contextMenu.lng,
+                        new_alt: val,
+                      }), { qos: 1 });
+                      setContextMenu(null);
+                    }
+                  }}
+                >
+                  Go
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                background: 'none',
+                border: 'none',
+                color: '#e8eaf0',
+                fontSize: '13px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#2a2d3a'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+              onClick={() => setContextMenu(prev => ({ ...prev, showAltInput: true }))}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px', color: '#4f8ef7' }}>
+                flight_takeoff
+              </span>
+              Fly there
+            </button>
+          )}
+        </div>
+      )}
 
       {localControlMode && localSelectedControlDrone && (
         <DroneControlPanel
