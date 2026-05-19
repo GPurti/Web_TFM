@@ -1,6 +1,6 @@
 .sidebar {
   background-color: white;
-  width: max-content;
+  width: 100%;
   border-radius: 20px;
   padding: 2rem 1rem;
   margin: 10px;
@@ -71,6 +71,8 @@
 .sidebarList {
   display: none;
   width: 100%; 
+  padding-left: 0;  /* ← alineat amb el text dels elements */
+  box-sizing: border-box;
 }
 
 .sidebar:hover .sidebarList.show {
@@ -97,7 +99,7 @@
 }
 
 .droneNameTruncate {
-  max-width: 100px;
+  max-width: 60px;
   display: inline-block;
   white-space: nowrap;
   overflow: hidden;
