@@ -1,6 +1,7 @@
 .droneContainer {
   width: 100%;
   box-sizing: border-box;
+  display: flex;
 }
 
 .droneHeader {
@@ -49,6 +50,7 @@
 
 .droneItemContent {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
   align-items: center;
   width: 100%;

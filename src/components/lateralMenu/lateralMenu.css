@@ -97,7 +97,7 @@
 }
 
 .droneNameTruncate {
-  max-width: 80px;
+  max-width: 100px;
   display: inline-block;
   white-space: nowrap;
   overflow: hidden;

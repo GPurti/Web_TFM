@@ -3,6 +3,7 @@ import supabase from '../../supabaseClient';
 import DeleteConfirmPopup from '../popup/popupConfirmDelete';
 import SaveMission from '../Fire/saveMissions';
 import generateRouteMission from '../Fire/generateRouteMission';
+import './droneList.css';
 
 export default function FireMissions({ mqttClient, realTimeDrones }) {
   const [missions, setMissions] = useState([]);

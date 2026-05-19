@@ -473,6 +473,7 @@ function App() {
           onLoiter={handleLoiter}
           onEmergencyStop={handleEmergencyStop}
           onRead={handleRead}
+          onManual={() => sendDroneCommand(selectedActionDrone.uid, 'MANUAL')}
           onAuto={handleAuto}
           onPosHold={handlePosHold}
           onRead={() => handleRead(selectedActionDrone.uid)}

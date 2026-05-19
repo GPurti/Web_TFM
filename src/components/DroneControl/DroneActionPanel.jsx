@@ -10,6 +10,7 @@ export default function DroneActionPanel({
   onRead,        // ← nuevo
   onAuto,        // ← nuevo
   onPosHold, 
+  onManual,
   onArm,
   onDisarm,
   onTakeoff,
@@ -104,10 +105,17 @@ export default function DroneActionPanel({
             </button>
 
             {/* PosHold */}
-            <button className="action-btn poshold" onClick={() => handleAction('poshold', onPosHold)} disabled={loading}>
-              <span className="material-symbols-outlined">my_location</span>
-              <span>{loading === 'poshold' ? '...' : 'PosHold'}</span>
-            </button>
+            {drone?.telemetry?.uav_type === 'fixed_wing' ? (
+              <button className="action-btn poshold" onClick={() => handleActionWithConfirm('manual', onManual, '⚠️ Are you sure you want to set MANUAL mode?')} disabled={loading}>
+                <span className="material-symbols-outlined">sports_score</span>
+                <span>{loading === 'manual' ? '...' : 'Manual'}</span>
+              </button>
+            ) : (
+              <button className="action-btn poshold" onClick={() => handleAction('poshold', onPosHold)} disabled={loading}>
+                <span className="material-symbols-outlined">my_location</span>
+                <span>{loading === 'poshold' ? '...' : 'PosHold'}</span>
+              </button>
+            )}
 
             {/* resto de botones igual */}
             <button className="action-btn arm" onClick={() => handleActionWithConfirm('arm', onArm, '⚠️ Are you sure you want to ARM the drone?')} disabled={loading}>
@@ -127,7 +135,7 @@ export default function DroneActionPanel({
             
             <button className="action-btn land" onClick={() => handleAction('land', onLand)} disabled={loading}>
               <span className="material-symbols-outlined">vertical_align_bottom</span>
-              <span>{loading === 'land' ? '...' : 'Land'}</span>
+              <span>{loading === 'land' ? '...' : drone?.telemetry?.uav_type === 'fixed_wing' ? 'Cruise' : 'Land'}</span>
             </button>
             
             <button className="action-btn rtl" onClick={() => handleAction('rtl', onRTL)} disabled={loading}>

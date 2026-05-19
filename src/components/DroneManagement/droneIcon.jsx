@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import './droneIcon.css';
 import DroneSvg from '../../assets/iconeDrone.svg?react';
+import PlaneSvg from '../../assets/iconePlane.svg?react';  
 
 const droneValuesMap = {
   gps_timestamp: "GPS Timestamp",
@@ -113,7 +114,11 @@ export default function DroneIcon({
       <div className="droneWithOrientation" style={{ transform: `rotate(${heading ?? 0}deg)` }}>
         <div className="orientationLine" />
         <div className="droneBody">
-          <DroneSvg className="droneSvg" style={{ color }}/>
+          {telemetry?.uav_type === 'fixed_wing' ? (
+            <PlaneSvg className="droneSvg" style={{ color }}/>
+          ) : (
+            <DroneSvg className="droneSvg" style={{ color }}/>
+          )}
         </div>
       </div>
 
