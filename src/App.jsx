@@ -459,6 +459,7 @@ function App() {
       {selectedActionDrone && (
         <DroneActionPanel
           drone={selectedActionDrone}
+          telemetry={realTimeDrones[selectedActionDrone?.uid]?.telemetry}
           onClose={() => setSelectedActionDrone(null)}
           onEdit={() => {
             setSelectedDrone(selectedActionDrone);

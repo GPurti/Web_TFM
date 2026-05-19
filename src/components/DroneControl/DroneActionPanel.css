@@ -73,15 +73,15 @@
 
 .panel-content {
   padding: 16px;
-  max-height: 500px;
+  max-height: calc(100vh - 120px);
   overflow-y: auto;
 }
 
 .drone-info {
   background: #f8f9fa;
   border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 16px;
+  padding: 8px;  /* ← redueix padding */
+  margin-bottom: 12px;
 }
 
 .info-row {
@@ -125,7 +125,7 @@
 .actions-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
 }
 
 .action-btn {
@@ -134,7 +134,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 10px 6px;
+  padding: 8px 6px; 
   border: none;
   border-radius: 10px;
   font-size: 11px;
@@ -156,7 +156,7 @@
 }
 
 .action-btn .material-symbols-outlined {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .action-btn.edit { background: #e3f2fd; color: #1976d2; }

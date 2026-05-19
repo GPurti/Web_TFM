@@ -1,9 +1,11 @@
 // src/components/DroneControl/DroneActionPanel.jsx
 import React, { useState, useRef, useEffect } from 'react';
 import './DroneActionPanel.css';
+import DroneHUD from './DroneHUD';
 
 export default function DroneActionPanel({ 
   drone, 
+  telemetry,
   onClose, 
   onEdit,
   onControlMode,
@@ -47,7 +49,7 @@ export default function DroneActionPanel({
       {/* Cabecera con flecha para expandir/colapsar */}
       <div className="panel-header" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="panel-title">
-          <span className="drone-icon">🚁</span>
+          <span className="drone-name">UID:</span>
           <span className="drone-name">{drone?.name || drone?.uid}</span>
         </div>
         <div className="header-actions">
@@ -65,18 +67,8 @@ export default function DroneActionPanel({
       {/* Contenido expandible */}
       {isExpanded && (
         <div className="panel-content">
-          {/* Información del drone */}
           <div className="drone-info">
-            <div className="info-row">
-              <span className="info-label">UID:</span>
-              <span className="info-value">{drone?.uid}</span>
-            </div>
-            <div className="info-row">
-              <span className="info-label">Estado:</span>
-              <span className={`status-badge ${isConnected ? 'connected' : 'disconnected'}`}>
-                {isConnected ? 'Conectado' : 'Desconectado'}
-              </span>
-            </div>
+            <DroneHUD telemetry={telemetry} />
           </div>
 
           <div className="actions-grid">
