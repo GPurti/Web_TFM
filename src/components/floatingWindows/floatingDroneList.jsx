@@ -163,7 +163,7 @@ export default function FloatingDroneList({ drones, onMinimize, onControlDrone }
                     title="Controlar este drone"
                   >
                     <span className="material-symbols-outlined">flight_takeoff</span>
-                    Control Drone
+                    Plan Flight
                   </button>
                 </div>
 

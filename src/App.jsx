@@ -401,7 +401,7 @@ function App() {
 
       <div className="lateralMenu" style={{ display: controlMode ? 'none' : 'block' }}>
         <LateralMenu
-          drones={drones}
+          hidden={controlMode}
           visibleDrones={visibleDrones}
           toggleDroneVisibility={toggleDroneVisibility}
           onEditDrone={setSelectedDrone}

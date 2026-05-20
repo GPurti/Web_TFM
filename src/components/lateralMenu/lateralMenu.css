@@ -1,146 +1,360 @@
+/* ==============================================
+   SIDEBAR — light mode, hover-expand, centered
+   ============================================== */
+
 .sidebar {
-  background-color: white;
-  width: 100%;
-  border-radius: 20px;
-  padding: 2rem 1rem;
-  margin: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-  max-height: calc(100vh - 20px);
-  overflow-y: auto;
+  position: fixed;
+  top: 50%;
+  left: 10px;
+  transform: translateY(-50%);
+  z-index: 1000;
+
+  width: 52px;
+  max-height: calc(100vh - 40px);
+
+  background: #ffffff;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+
+  padding: 12px 8px;
+  box-sizing: border-box;
+
   overflow-x: hidden;
+  overflow-y: auto;
+
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sidebarMenu {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  min-height: 500px;
+.sidebar:hover {
+  width: 230px;
+}
+
+/* Oculto cuando se pasa hidden */
+.sidebar.sidebar--hidden {
+  display: none;
+}
+
+/* ─── Logo ─────────────────────────────────── */
+.sb-logo {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.sidebarElement {
-  padding: 0.1rem 1rem;
-  border-radius: 4px;
-  display: grid;
   align-items: center;
-  grid-template-columns: 40px 0fr;
-  transition: grid-template-columns 0.4s;
-  cursor: pointer;
+  gap: 10px;
+  padding: 4px 4px 12px;
 }
 
-.sidebar:hover .sidebarElement {
-  grid-template-columns: 40px 1fr;
+.sb-logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15));
+  flex-shrink: 0;
 }
 
-.sidebarElement:not(:has(.sidebarLogo)):hover {
-  background-color: transparent;
-}
-
-.sidebarElement:not(:has(.sidebarLogo)) {
-  margin-bottom: 1rem;
-}
-
-.sidebarLogo {
-  max-width: 60px;
-  overflow: hidden;
-  justify-self: center;
-}
-
-.sidebarTextLogo {
-  padding-left: 1.3rem;
-}
-
-.sidebarHide {
-  overflow: hidden;
-}
-
-.sidebarIcon {
-  overflow: hidden;
-  justify-self: center;
-  text-align: center;
-  cursor: pointer;
-}
-
-.sidebarText {
-  font-size: 14px;
+.sb-logo-text {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
   white-space: nowrap;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease 0.05s, max-width 0.25s ease;
 }
 
-.sidebarList {
-  display: none;
-  width: 100%; 
-  padding-left: 0;  /* ← alineat amb el text dels elements */
-  box-sizing: border-box;
+.sidebar:hover .sb-logo-text {
+  opacity: 1;
+  max-width: 160px;
 }
 
-.sidebar:hover .sidebarList.show {
-  display: block;
-  padding-top: 5px;
+/* ─── Separador ─────────────────────────────── */
+.sb-divider {
+  height: 1px;
+  background: rgba(0, 0, 0, 0.08);
+  margin: 4px 0 8px;
 }
 
-.sidebarList.closing {
-  display: none;
-}
-
-.resizableList {
+/* ─── Item de menú ──────────────────────────── */
+.sb-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
-  resize: vertical;
-  overflow: auto;
-  height: 100px;
-  max-height: 400px;
-  min-height: 60px;
+  padding: 9px 6px;
+  border-radius: 9px;
+  cursor: pointer;
   box-sizing: border-box;
+  transition: background 0.15s;
+  margin-bottom: 2px;
 }
 
-.sidebarLogin {
-  margin-top: auto;
+.sb-item:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
-.droneNameTruncate {
-  max-width: 60px;
-  display: inline-block;
+.sb-item:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* Icono del item */
+.sb-item .material-symbols-outlined {
+  font-size: 20px;
+  
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.sb-item:hover .material-symbols-outlined {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+/* Label del item */
+.sb-item-label {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  vertical-align: middle;
-  cursor: pointer;
+  opacity: 0;
+  max-width: 0;
+  transition: color 0.15s, opacity 0.2s ease 0.05s, max-width 0.25s ease;
 }
 
-.add-fire-button {
+.sidebar:hover .sb-item-label {
+  opacity: 1;
+  max-width: 150px;
+}
+
+.sb-item:hover .sb-item-label {
+  color: rgba(0, 0, 0, 0.9);
+}
+
+/* Chevron */
+.sb-chevron {
+  font-size: 16px !important;
+  color: rgba(0, 0, 0, 0.25) !important;
+  flex-shrink: 0;
+  opacity: 0;
+  max-width: 0;
+  overflow: hidden;
+  transition: opacity 0.2s ease 0.05s, max-width 0.25s ease;
+}
+
+.sidebar:hover .sb-chevron {
+  opacity: 1;
+  max-width: 24px;
+}
+
+/* ─── Panel expandible ──────────────────────── */
+.sb-panel {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.03);
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+/* ─── Acciones dentro del panel ─────────────── */
+.sb-panel-actions {
   display: flex;
   align-items: center;
-  gap: 4px;
-  background-color: #ff6b6b;
-  color: white;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.sb-btn-add {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(0, 0, 0, 0.06);
   border: none;
-  border-radius: 20px;
-  padding: 4px 10px;
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: rgba(0, 0, 0, 0.65);
   font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  box-sizing: border-box;
 }
 
-.add-fire-button:hover {
-  background-color: #ff5252;
+.sb-btn-add:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: rgba(0, 0, 0, 0.9);
 }
 
-.add-fire-button.active {
-  background-color: #4caf50;
+.sb-btn-add .material-symbols-outlined {
+  font-size: 16px !important;
+  color: inherit !important;
 }
 
-.add-fire-button .material-symbols-outlined {
-  font-size: 16px;
-}
-
-.sidebar:not(:hover) .add-fire-button {
-  display: none;
-}
-
-.missions-header {
+.sb-btn-refresh {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+.sb-btn-refresh:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.sb-btn-refresh .material-symbols-outlined {
+  font-size: 18px !important;
+  color: rgba(0, 0, 0, 0.45) !important;
+  transition: color 0.15s;
+}
+
+.sb-btn-refresh:hover .material-symbols-outlined {
+  color: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* ─── Lista de drones ───────────────────────── */
+.sb-drone-list {
+  list-style: none;
+  padding: 6px 8px;
+  margin: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  box-sizing: border-box;
+}
+
+.sb-drone-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  transition: background 0.12s;
+  box-sizing: border-box;
+}
+
+.sb-drone-item:hover {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+.sb-drone-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.75);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.sb-drone-actions {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex-shrink: 0;
+}
+
+.sb-drone-actions .material-symbols-outlined {
+  font-size: 15px !important;
+  color: rgba(0, 0, 0, 0.3) !important;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 4px;
+  transition: color 0.12s, background 0.12s;
+}
+
+.sb-drone-actions .material-symbols-outlined:hover {
+  color: rgba(0, 0, 0, 0.8) !important;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.sb-empty {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.3);
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* ─── Fire: botón ───────────────────────────── */
+.sb-fire-actions {
+  padding: 8px 10px 6px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.sb-btn-fire {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: rgba(239, 68, 68, 0.1);
+  border: none;
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+  box-sizing: border-box;
+}
+
+.sb-btn-fire:hover {
+  background: rgba(239, 68, 68, 0.18);
+  color: #b91c1c;
+}
+
+.sb-btn-fire.active {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16a34a;
+}
+
+.sb-btn-fire.active:hover {
+  background: rgba(34, 197, 94, 0.18);
+  color: #15803d;
+}
+
+.sb-btn-fire .material-symbols-outlined {
+  font-size: 16px !important;
+  color: inherit !important;
+}
+
+/* ─── Fire: missions list ───────────────────── */
+.sb-fire-list {
+  margin: 0 8px 8px;
+  box-sizing: border-box;
+  resize: vertical;
+  overflow: auto;
+  height: 100px;
+  max-height: 280px;
+  min-height: 44px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ─── Spacer ────────────────────────────────── */
+.sb-spacer {
+  height: 8px;
 }

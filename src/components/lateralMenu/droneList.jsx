@@ -9,7 +9,6 @@ export default function DroneList() {
   const [drones, setDrones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingDrone, setEditingDrone] = useState(null);
   const [deletingDroneId, setDeletingDroneId] = useState(null);
@@ -26,145 +25,102 @@ export default function DroneList() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchDrones();
-  }, []);
+  useEffect(() => { fetchDrones(); }, []);
 
   const handleAddDrone = async ({ name }) => {
     const { error } = await supabase.from('DroneList').insert([{ name }]);
-    if (!error) {
-      await fetchDrones();
-      setShowAddModal(false);
-    }
+    if (!error) { await fetchDrones(); setShowAddModal(false); }
   };
 
   const handleUpdateDrone = async ({ id, uid, name, color, SpeechBubbleDroneIcone }) => {
     const { error } = await supabase
       .from('DroneList')
-      .update({
-        uid,
-        name,
-        color,
-        SpeechBubbleDroneIcone,
-      })
+      .update({ uid, name, color, SpeechBubbleDroneIcone })
       .eq('id', id);
-
-    if (!error) {
-      await fetchDrones();
-      setEditingDrone(null);
-    } else {
-      console.error('Error updating drone:', error.message);
-    }
+    if (!error) { await fetchDrones(); setEditingDrone(null); }
+    else console.error('Error updating drone:', error.message);
   };
 
   const toggleDroneVisibility = async (drone) => {
     const { error } = await supabase
-      .from('DroneList')
-      .update({ show: !drone.show })
-      .eq('id', drone.id);
-
-    if (error) {
-      console.error('Error updating visibility:', error.message);
-    } else {
-      setDrones((prevDrones) =>
-        prevDrones.map((d) =>
-          d.id === drone.id ? { ...d, show: !drone.show } : d
-        )
-      );
-    }
+      .from('DroneList').update({ show: !drone.show }).eq('id', drone.id);
+    if (!error)
+      setDrones(prev => prev.map(d => d.id === drone.id ? { ...d, show: !drone.show } : d));
   };
 
   const toggleWaterStatus = async (drone) => {
     const { error } = await supabase
-      .from('DroneList')
-      .update({ water: !drone.water })
-      .eq('id', drone.id);
-
-    if (error) {
-      console.error('Error updating water status:', error.message);
-    } else {
-      setDrones((prevDrones) =>
-        prevDrones.map((d) =>
-          d.id === drone.id ? { ...d, water: !drone.water } : d
-        )
-      );
-    }
+      .from('DroneList').update({ water: !drone.water }).eq('id', drone.id);
+    if (!error)
+      setDrones(prev => prev.map(d => d.id === drone.id ? { ...d, water: !drone.water } : d));
   };
 
   return (
     <div className="droneContainer">
-      <div className="droneHeader">
-        <div className="droneHeaderName">Name</div>
-        <div className="droneHeaderButtons">
-          <button onClick={() => setShowAddModal(true)} className="iconButton" title="Add drone">
-            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>add</span>
-          </button>
-          <button
-            onClick={fetchDrones}
-            className="iconButton"
-            title="Refresh list"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>refresh</span>
-          </button>
-        </div>
+
+      {/* ── Barra de acciones ── */}
+      <div className="droneActionBar">
+        <button className="droneAddBtn" onClick={() => setShowAddModal(true)}>
+          <span className="material-symbols-outlined">add</span>
+          New drone
+        </button>
+        <button className="droneRefreshBtn" onClick={fetchDrones} title="Refresh">
+          <span className="material-symbols-outlined">refresh</span>
+        </button>
       </div>
 
-      {error && <p className="errorMessage">Error: {error.message}</p>}
+      {/* ── Lista ── */}
+      {error && <p className="droneError">Error: {error.message}</p>}
 
-      <ul className="droneList">
-        {drones.map((drone) => (
-          <li key={drone.id} className="droneItem">
-            <div className="droneItemContent">
-              <span className="droneNameTruncate">{drone.name}</span>
-              <div className="droneActions">
-                <span
-                  className="material-symbols-outlined"
-                  title="Water/Humidity status"
-                  onClick={() => toggleWaterStatus(drone)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {drone.water ? 'humidity_low' : 'invert_colors_off'}
-                </span>
-
-                <span
-                  className="material-symbols-outlined"
-                  title="Show/Hide on map"
-                  onClick={() => toggleDroneVisibility(drone)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  {drone.show ? 'visibility' : 'visibility_off'}
-                </span>
-
-                <span
-                  className="material-symbols-outlined"
-                  title="Edit"
-                  onClick={() => setEditingDrone(drone)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  edit
-                </span>
-
-                <span
-                  className="material-symbols-outlined"
-                  title="Delete"
-                  onClick={() => setDeletingDroneId(drone.id)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  delete
-                </span>
-              </div>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <div className="droneScrollArea">
+        {loading && drones.length === 0 ? (
+          <p className="droneLoading">Loading…</p>
+        ) : drones.length === 0 ? (
+          <p className="droneEmpty">No drones added yet</p>
+        ) : (
+          <ul className="droneList">
+            {drones.map((drone) => (
+              <li key={drone.id} className="droneItem">
+                <span className="droneName" title={drone.name}>{drone.name}</span>
+                <div className="droneActions">
+                  <span
+                    className="material-symbols-outlined"
+                    title="Water status"
+                    onClick={() => toggleWaterStatus(drone)}
+                  >
+                    {drone.water ? 'humidity_low' : 'invert_colors_off'}
+                  </span>
+                  <span
+                    className="material-symbols-outlined"
+                    title={drone.show ? 'Hide on map' : 'Show on map'}
+                    onClick={() => toggleDroneVisibility(drone)}
+                  >
+                    {drone.show ? 'visibility' : 'visibility_off'}
+                  </span>
+                  <span
+                    className="material-symbols-outlined"
+                    title="Edit"
+                    onClick={() => setEditingDrone(drone)}
+                  >
+                    edit
+                  </span>
+                  <span
+                    className="material-symbols-outlined"
+                    title="Delete"
+                    onClick={() => setDeletingDroneId(drone.id)}
+                  >
+                    delete
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {showAddModal && (
-        <AddDroneModal
-          onClose={() => setShowAddModal(false)}
-          onAdd={handleAddDrone}
-        />
+        <AddDroneModal onClose={() => setShowAddModal(false)} onAdd={handleAddDrone} />
       )}
-
       {editingDrone && (
         <EditDroneModal
           drone={editingDrone}
@@ -172,7 +128,6 @@ export default function DroneList() {
           onSave={handleUpdateDrone}
         />
       )}
-
       {deletingDroneId && (
         <DeleteConfirmPopup
           droneId={deletingDroneId}

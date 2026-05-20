@@ -1,78 +1,153 @@
+/* ── Contenedor principal ── */
 .droneContainer {
-  width: 100%;
-  min-width: 220px;
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  padding-top: 65px;
-}
-
-.droneHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
   width: 100%;
 }
 
-.droneHeaderName {
-  font-weight: bold;
-  font-size: 1rem;
-  flex: 1;
-}
-
-.droneHeaderButtons {
+/* ── Barra de acciones (siempre visible arriba) ── */
+.droneActionBar {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.droneAddBtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 10px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.droneAddBtn:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+}
+
+.droneAddBtn .material-symbols-outlined {
+  font-size: 16px !important;
+  color: inherit !important;
+}
+
+.droneRefreshBtn {
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.12s;
   flex-shrink: 0;
 }
 
+.droneRefreshBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.droneRefreshBtn .material-symbols-outlined {
+  font-size: 18px !important;
+  color: rgba(255, 255, 255, 0.45) !important;
+  transition: color 0.12s;
+}
+
+.droneRefreshBtn:hover .material-symbols-outlined {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ── Área scrollable ── */
+.droneScrollArea {
+  overflow-y: auto;
+  overflow-x: hidden;
+  max-height: 200px;
+  padding: 6px 8px;
+}
+
+/* ── Estados vacíos / carga ── */
+.droneEmpty,
+.droneLoading {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  text-align: center;
+  padding: 10px 0;
+}
+
+.droneError {
+  font-size: 11px;
+  color: #fca5a5;
+  padding: 4px 10px;
+}
+
+/* ── Lista ── */
 .droneList {
   list-style: none;
   padding: 0;
   margin: 0;
-  width: 100%;
-}
-
-.droneItem {
-  background: #fff9ce;
-  padding: 0.4rem 0.5rem;
-  margin-bottom: 0.4rem;
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  box-sizing: border-box;
-  width: 100%;
-}
-
-.droneItemContent {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: 4px;
+  flex-direction: column;
+  gap: 3px;
 }
 
-.droneNameTruncate {
+/* ── Fila de drone ── */
+.droneItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.12s;
+}
+
+.droneItem:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.droneName {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
 }
 
+/* ── Iconos de acción ── */
 .droneActions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   flex-shrink: 0;
 }
 
-.droneActions span {
-  font-size: 20px;
+.droneActions .material-symbols-outlined {
+  font-size: 15px !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 5px;
+  transition: color 0.12s, background 0.12s;
 }
 
-.droneActions .material-symbols-outlined {
-  font-size: 18px;
+.droneActions .material-symbols-outlined:hover {
+  color: rgba(255, 255, 255, 0.85) !important;
+  background: rgba(255, 255, 255, 0.08);
 }
